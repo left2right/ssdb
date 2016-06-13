@@ -36,6 +36,11 @@ void MyApplication::usage(int argc, char **argv){
 	printf("    -h    show this message\n");
 }
 
+/*
+	1.打开数据库文件（ssdb的底层存储基于leveldb）
+    2.打开数据库元数据文件
+    3.创建网络服务对象NetworkServer并调用serve函数启动事件循环，serve函数在收到SIGTERM，SIGINT信号时会退出
+*/
 void MyApplication::run(){
 	Options option;
 	option.load(*conf);
@@ -63,20 +68,21 @@ void MyApplication::run(){
 
 	SSDB *data_db = NULL;
 	SSDB *meta_db = NULL;
+	// 打开数据文件
 	data_db = SSDB::open(option, data_db_dir);
 	if(!data_db){
 		log_fatal("could not open data db: %s", data_db_dir.c_str());
 		fprintf(stderr, "could not open data db: %s\n", data_db_dir.c_str());
 		exit(1);
 	}
-
+	// 打开元数据文件
 	meta_db = SSDB::open(Options(), meta_db_dir);
 	if(!meta_db){
 		log_fatal("could not open meta db: %s", meta_db_dir.c_str());
 		fprintf(stderr, "could not open meta db: %s\n", meta_db_dir.c_str());
 		exit(1);
 	}
-
+	// 启动网络服务
 	NetworkServer *net = NULL;	
 	SSDBServer *server;
 	net = NetworkServer::init(*conf);
@@ -96,5 +102,6 @@ void MyApplication::run(){
 
 int main(int argc, char **argv){
 	MyApplication app;
+	//调用MyApplication的main函数完成，MyApplication(继承自Application, util/app.h util/app.cpp)，Application作为基类实现了服务端的通用功能
 	return app.main(argc, argv);
 }

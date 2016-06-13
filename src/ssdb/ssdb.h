@@ -15,6 +15,7 @@ found in the LICENSE file.
 class Bytes;
 class Config;
 
+//SSDB是一个抽象类，它除了定义对存储进行操作的各个接口，还提供了打开数据库文件的方法SSDB::open。
 class SSDB{
 public:
 	SSDB(){}

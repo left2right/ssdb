@@ -202,6 +202,7 @@ void NetworkServer::serve(){
 	ready_list_t::iterator it;
 	const Fdevents::events_t *events;
 
+	// 开始时设置三个需要监听的文件描述符，serv_link监听新连接到来，reader读任务线程池，write写任务线程池
 	fdes->set(serv_link->fd(), FDEVENT_IN, 0, serv_link);
 	fdes->set(this->reader->fd(), FDEVENT_IN, 0, this->reader);
 	fdes->set(this->writer->fd(), FDEVENT_IN, 0, this->writer);
@@ -228,17 +229,20 @@ void NetworkServer::serve(){
 			log_fatal("events.wait error: %s", strerror(errno));
 			break;
 		}
-		
+		// 处理有读写事件发生的连接，将准备好的连接添加到ready_list中
 		for(int i=0; i<(int)events->size(); i++){
 			const Fdevent *fde = events->at(i);
+			// 1.事件发生在监听Link上，说明是新的连接到达
 			if(fde->data.ptr == serv_link){
 				Link *link = accept_link();
 				if(link){
 					this->link_count ++;				
 					log_debug("new link from %s:%d, fd: %d, links: %d",
 						link->remote_ip, link->remote_port, link->fd(), this->link_count);
+					// 将新的连接添加到监听队列中
 					fdes->set(link->fd(), FDEVENT_IN, 1, link);
 				}
+			// 2. 事件发生在两个任务队列上，说明有任务完成，调用proc_result处理结果	
 			}else if(fde->data.ptr == this->reader || fde->data.ptr == this->writer){
 				ProcWorkerPool *worker = (ProcWorkerPool *)fde->data.ptr;
 				ProcJob *job;
@@ -249,6 +253,7 @@ void NetworkServer::serve(){
 				if(proc_result(job, &ready_list) == PROC_ERROR){
 					//
 				}
+			// 3. 处理其他客户端连接，这里将对客户端发送来的数据进行处理，解析客户端的请求
 			}else{
 				proc_client_event(fde, &ready_list);
 			}
@@ -262,7 +267,7 @@ void NetworkServer::serve(){
 				delete link;
 				continue;
 			}
-
+			// link的recv函数将解析收到的数据
 			const Request *req = link->recv();
 			if(req == NULL){
 				log_warn("fd: %d, link parse error, delete link", link->fd());
@@ -271,11 +276,12 @@ void NetworkServer::serve(){
 				delete link;
 				continue;
 			}
+			// req为空，说明没有解析出完整的请求，仍然需要监听读事件，期待继续读入数据解析
 			if(req->empty()){
 				fdes->set(link->fd(), FDEVENT_IN, 1, link);
 				continue;
 			}
-			
+			// 如果收到的数据已经解析完成，则创建JOB对象供任务线程池处理
 			link->active_time = millitime();
 
 			ProcJob *job = new ProcJob();
@@ -291,7 +297,8 @@ void NetworkServer::serve(){
 				this->link_count --;
 				continue;
 			}
-			
+			// 有一些任务在proc函数中由当前线程处理完成，因此添加到ready_list_2中，
+			// 在外层while循环的开头，会交换ready_list_2和ready_list，然后处理ready_list
 			if(proc_result(job, &ready_list_2) == PROC_ERROR){
 				//
 			}
@@ -318,6 +325,7 @@ Link* NetworkServer::accept_link(){
 	return link;
 }
 
+// 对任务结果的处理放在proc_result函数中，在这里，会将结果发送给客户端
 int NetworkServer::proc_result(ProcJob *job, ready_list_t *ready_list){
 	Link *link = job->link;
 	int result = job->result;
@@ -328,6 +336,7 @@ int NetworkServer::proc_result(ProcJob *job, ready_list_t *ready_list){
 			serialize_req(*job->req).c_str(),
 			serialize_req(job->resp.resp).c_str());
 	}
+	// 用于统计计数
 	if(job->cmd){
 		job->cmd->calls += 1;
 		job->cmd->time_wait += job->time_wait;
@@ -341,6 +350,7 @@ int NetworkServer::proc_result(ProcJob *job, ready_list_t *ready_list){
 	}
 	
 	if(!link->output->empty()){
+		// 这里将任务产生的结果发送给客户端
 		int len = link->write();
 		//log_debug("write: %d", len);
 		if(len < 0){
@@ -348,13 +358,16 @@ int NetworkServer::proc_result(ProcJob *job, ready_list_t *ready_list){
 			goto proc_err;
 		}
 	}
-
+	// 如果输出缓冲区不为空，则说明还有数据未完全发送给客户端，需要关注写事件
 	if(!link->output->empty()){
 		fdes->set(link->fd(), FDEVENT_OUT, 1, link);
 	}
+	// 如果输入缓冲区为空，说明客户端发送过来的数据已经全部解析完成，继续关注读事件
 	if(link->input->empty()){
 		fdes->set(link->fd(), FDEVENT_IN, 1, link);
 	}else{
+		// 读缓冲区不为空, 说明还有输入的数据需要处理，将link放到ready_list里面等待处理，同时
+		// 暂时不再关注该连接上的读事件
 		fdes->clr(link->fd(), FDEVENT_IN);
 		ready_list->push_back(link);
 	}
@@ -390,13 +403,20 @@ A link is in either one of these places:
 	2. async worker queue
 So it safe to delete link when processing ready list and async worker result.
 */
+/*
+proc_client_event处理客户端的交互:
+	1.处理读事件，将数据从内核缓冲区读到link自带的应用层缓冲区(后面将对应用层缓冲区中的数据进行解析，获取客户端的真实请求)。
+	2.处理写事件，将结果数据发送给客户端(将Link的写缓冲区中的数据交给内核发送)。
+*/
 int NetworkServer::proc_client_event(const Fdevent *fde, ready_list_t *ready_list){
 	Link *link = (Link *)fde->data.ptr;
+	// 连接上有数据可读，则读到link的缓冲区中，并将link添加到ready_list等待接下来的处理
 	if(fde->events & FDEVENT_IN){
 		ready_list->push_back(link);
 		if(link->error()){
 			return 0;
 		}
+		// 读取数据到接收缓冲区
 		int len = link->read();
 		//log_debug("fd: %d read: %d", link->fd(), len);
 		if(len <= 0){
@@ -405,16 +425,19 @@ int NetworkServer::proc_client_event(const Fdevent *fde, ready_list_t *ready_lis
 			return 0;
 		}
 	}
+	// 连接上有写事件发生，将输出缓冲区中的数据写到客户端，这里不会将link添加到ready_list，因为向客户端写数据说明该连接上的请求已处理完成，解析来只用将数据全部写到客户端即可
 	if(fde->events & FDEVENT_OUT){
 		if(link->error()){
 			return 0;
 		}
+		// 写数据
 		int len = link->write();
 		if(len <= 0){
 			log_debug("fd: %d, write: %d, delete link", link->fd(), len);
 			link->mark_error();
 			return 0;
 		}
+		// 如果全部数据写完了，则从监听列表中清除该连接的写事件
 		if(link->output->empty()){
 			fdes->clr(link->fd(), FDEVENT_OUT);
 		}
@@ -422,6 +445,11 @@ int NetworkServer::proc_client_event(const Fdevent *fde, ready_list_t *ready_lis
 	return 0;
 }
 
+/*
+对ready_list的处理：
+	1.对ready_list中的每个Link调用recv函数解析，recv函数会根据格式试图从Link的读缓冲区中解析出完整的请求，如果当前的数据还不够解析出一个完整的请求，则返回的req为empty，这样会继续监听该Link的读事件，希望读取更多的数据。如果解析出完整的请求，将构造JOB(任务)分发处理。
+	2.proc函数将根据JOB对任务进行分发处理：读任务线程池，写任务线程池，当前线程处理。
+*/
 int NetworkServer::proc(ProcJob *job){
 	job->serv = this;
 	job->result = PROC_OK;
@@ -431,12 +459,13 @@ int NetworkServer::proc(ProcJob *job){
 
 	do{
 		// AUTH
+		// 检查是否需要Auth，否则发送失败的Response
 		if(this->need_auth && job->link->auth == false && req->at(0) != "auth"){
 			job->resp.push_back("noauth");
 			job->resp.push_back("authentication required");
 			break;
 		}
-		
+		// 从注册的处理函数表中找出对应的处理函数构造Command
 		Command *cmd = proc_map.get_proc(req->at(0));
 		if(!cmd){
 			job->resp.push_back("client_error");
@@ -444,8 +473,9 @@ int NetworkServer::proc(ProcJob *job){
 			break;
 		}
 		job->cmd = cmd;
-		
+		// FLAG_THREAD:表明任务需要在其他线程中执行
 		if(cmd->flags & Command::FLAG_THREAD){
+			// 表明是需要在子线程中执行的写任务
 			if(cmd->flags & Command::FLAG_WRITE){
 				writer->push(job);
 			}else{
@@ -453,13 +483,13 @@ int NetworkServer::proc(ProcJob *job){
 			}
 			return PROC_THREAD;
 		}
-
+		// 某些任务不用再子线程中执行，直接在主线程中执行并构造处理结果
 		proc_t p = cmd->proc;
 		job->time_wait = 1000 * (millitime() - job->stime);
 		job->result = (*p)(this, job->link, *req, &job->resp);
 		job->time_proc = 1000 * (millitime() - job->stime) - job->time_wait;
 	}while(0);
-	
+	// send函数只是将Response放到link的写缓冲区中，并不真正的发送给客户端
 	if(job->link->send(job->resp.resp) == -1){
 		job->result = PROC_ERROR;
 	}
