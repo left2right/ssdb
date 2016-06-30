@@ -57,11 +57,15 @@ class Fdevents{
 	public:
 		Fdevents();
 		~Fdevents();
-
+		// 判断是否侦听fd读/写事件
 		bool isset(int fd, int flag);
+		// 添加fd事件
 		int set(int fd, int flags, int data_num, void *data_ptr);
+		// 取消监听fd
 		int del(int fd);
+		// 清除fd读/写事件
 		int clr(int fd, int flags);
+		// 监听fd事件，放在ready_events中
 		const events_t* wait(int timeout_ms=-1);
 };
 

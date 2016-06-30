@@ -118,10 +118,15 @@ bool operator<=(const Bytes &x, const Bytes &y){
 
 class Buffer{
 	private:
-		char *buf;
+		// Buffer 起始地址
+		char *buf; 
+		// 数据区起始地址
 		char *data_;
+		//数据区大小
 		int size_;
+		//缓冲区大小
 		int total_;
+		//首次申请大小
 		int origin_total;
 	public:
 		Buffer(int total);
@@ -147,21 +152,22 @@ class Buffer{
 		char* slot() const{
 			return data_ + size_;
 		}
-
+		//剩余空间大小
 		int space() const{
 			return total_ - (int)(data_ - buf) - size_;
 		}
-
+		//数据区扩大
 		void incr(int num){
 			size_ += num;
 		}
-
+		//数据区缩小
 		void decr(int num){
 			size_ -= num;
 			data_ += num;
 		}
 
 		// 保证不改变后半段的数据, 以便使已生成的 Bytes 不失效.
+		// 注：当前段无效数据空间超过缓冲区一半时，把数据区拷贝到缓冲区起始地址
 		void nice();
 		// 扩大缓冲区
 		int grow();

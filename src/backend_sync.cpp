@@ -116,9 +116,12 @@ void* BackendSync::_run_thread(void *arg){
 		bool is_empty = true;
 		// WARN: MUST do first sync() before first copy(), because
 		// sync() will refresh last_seq, and copy() will not
+		// 先调sync，sync里面会更新last_seq。而且sync里面会判断，如果是COPY阶段，新的Binlog操作的key在COPY的key之后，就忽略本条Binlog
+		// 等待COPY操作顺序复制key-value
 		if(client.sync(logs)){
 			is_empty = false;
 		}
+		// 如果是COPY阶段，就执行copy操作，按key范围顺序拷贝
 		if(client.status == Client::COPY){
 			if(client.copy()){
 				is_empty = false;
@@ -205,6 +208,10 @@ std::string BackendSync::Client::stats(){
 	return s;
 }
 
+// 初始化操作里面根据slave发过来的seq和key判断执行的状态
+// 首次连上来的slave，传过来的last_key和last_seq都没有值，进入COPY状态；
+// 如果last_key为空，last_seq不为空，则表明是重连，进入SYNC状态；
+// 否则为COPY状态
 void BackendSync::Client::init(){
 	const std::vector<Bytes> *req = this->link->last_recv();
 	last_seq = 0;
@@ -278,6 +285,7 @@ void BackendSync::Client::noop(){
 	link->send(noop.repr());
 }
 
+// 根据迭代器将当前的数据拷贝到slave
 int BackendSync::Client::copy(){
 	if(this->iter == NULL){
 		log_info("new iterator, last_key: '%s'", hexmem(last_key.data(), last_key.size()).c_str());
@@ -351,6 +359,7 @@ copy_end:
 
 int BackendSync::Client::sync(BinlogQueue *logs){
 	Binlog log;
+	// 从BinlogQueue取一条数据进行同步
 	while(1){
 		int ret = 0;
 		uint64_t expect_seq = this->last_seq + 1;
@@ -405,6 +414,7 @@ int BackendSync::Client::sync(BinlogQueue *logs){
 		break;
 	}
 
+	// 根据数据类型添加数据到待发送缓冲区
 	int ret = 0;
 	std::string val;
 	switch(log.cmd()){

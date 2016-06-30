@@ -159,6 +159,7 @@ BinlogQueue::BinlogQueue(leveldb::DB *db, bool enabled, int capacity){
 	this->capacity = capacity;
 	this->enabled = enabled;
 	
+	// 下面的逻辑可以表明min_seq并非db中的最小seq，而只是队列范围中的最小seq
 	Binlog log;
 	if(this->find_last(&log) == 1){
 		this->last_seq = log.seq();
@@ -183,7 +184,7 @@ BinlogQueue::BinlogQueue(leveldb::DB *db, bool enabled, int capacity){
 		//this->clean_obsolete_binlogs();
 	}
 
-	// start cleaning thread
+	// start cleaning thread 启动清理Binlog的线程，定量清理Binlog
 	if(this->enabled){
 		thread_quit = false;
 		pthread_t tid;

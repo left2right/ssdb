@@ -15,6 +15,7 @@ BackendDump::~BackendDump(){
 	log_debug("BackendDump finalized");
 }
 
+//在NetworkServer接收到客户端的dump命令时，会执行proc_dump函数，该函数会执行BackendDump::proc
 void BackendDump::proc(const Link *link){
 	log_info("accept dump client: %d", link->fd());
 	struct run_arg *arg = new run_arg();
@@ -29,6 +30,11 @@ void BackendDump::proc(const Link *link){
 	}
 }
 
+/*
+1）根据Link解析出来的客户端请求获取备份的起点start，终点end，长度limit。
+2）利用leveldb的iterator函数获取该范围内的数据: Iterator *it = backend->ssdb->iterator(start, end, limit);
+3）将数据写入到Link的输出缓冲区，发送给客户端，子线程退出。
+*/
 void* BackendDump::_run_thread(void *arg){
 	pthread_detach(pthread_self());
 	struct run_arg *p = (struct run_arg*)arg;
@@ -36,7 +42,7 @@ void* BackendDump::_run_thread(void *arg){
 	Link *link = (Link *)p->link;
 	delete p;
 
-	//
+	//将这个链接上的读写设置为阻塞模式，因为在此之后对客户端写数据不再通过事件通知，而是阻塞写
 	link->noblock(false);
 
 	const std::vector<Bytes>* req = link->last_recv();
@@ -67,9 +73,11 @@ void* BackendDump::_run_thread(void *arg){
 
 	int count = 0;
 	bool quit = false;
+	 // step2 : 从底层的leveldb中获取对应的数据
 	Iterator *it = backend->ssdb->iterator(start, end, limit);
 	
 	link->send("begin");
+	 // step3 : 将数据按每32K字节写到客户端
 	while(!quit){
 		if(!it->next()){
 			quit = true;
@@ -85,12 +93,12 @@ void* BackendDump::_run_thread(void *arg){
 			output->append_record(key);
 			output->append_record(val);
 			output->append('\n');
-
+			 // 当link的输出缓冲区没有到达32K字节时，继续写入到输出缓冲区
 			if(output->size() < 32 * 1024){
 				continue;
 			}
 		}
-
+		// 输出缓冲区到达32K字节时，写到客户端
 		if(link->flush() == -1){
 			log_error("fd: %d, send error: %s", link->fd(), strerror(errno));
 			break;

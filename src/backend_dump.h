@@ -12,10 +12,12 @@ found in the LICENSE file.
 
 class BackendDump{
 private:
+	/* 子线程的参数*/
 	struct run_arg{
 		const Link *link;
 		const BackendDump *backend;
 	};
+	/* 线程函数 */
 	static void* _run_thread(void *arg);
 	SSDB *ssdb;
 public:

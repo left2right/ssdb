@@ -24,11 +24,15 @@ typedef std::vector<Link *> ready_list_t;
 class NetworkServer
 {
 private:
+	//TICK_INTERVAL 100ms
 	int tick_interval;
+	//STATUS_REPORT_TICKS    (300 * 1000/TICK_INTERVAL) 
 	int status_report_ticks;
 
 	//Config *conf;
+	// serv_link = Link::listen(ip, port)
 	Link *serv_link;
+	// fdes = new Fdevents()
 	Fdevents *fdes;
 
 	Link* accept_link();
@@ -36,10 +40,14 @@ private:
 	int proc_client_event(const Fdevent *fde, ready_list_t *ready_list);
 
 	int proc(ProcJob *job);
-
+	
+	// = READER_THREADS = 10;
 	int num_readers;
+	// = WRITER_THREADS = 1;
 	int num_writers;
+	// new ProcWorkerPool("writer");
 	ProcWorkerPool *writer;
+	// new ProcWorkerPool("reader");
 	ProcWorkerPool *reader;
 
 	NetworkServer();
@@ -48,9 +56,11 @@ protected:
 	void usage(int argc, char **argv);
 
 public:
+	// = new IpFilter();
 	IpFilter *ip_filter;
 	void *data;
 	ProcMap proc_map;
+	// link counter
 	int link_count;
 	bool need_auth;
 	std::string password;

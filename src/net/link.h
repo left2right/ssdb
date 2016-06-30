@@ -18,28 +18,35 @@ found in the LICENSE file.
 
 class Link{
 	private:
-		int sock;
+		// socket fd
+		int sock; 
+		// socket是否阻塞
 		bool noblock_;
+		//是否出错
 		bool error_;
+		//接收数据
 		std::vector<Bytes> recv_data;
-
+		// redis 连接
 		RedisLink *redis;
 
 		static int min_recv_buf;
 		static int min_send_buf;
 	public:
 		const static int MAX_PACKET_SIZE = 128 * 1024 * 1024;
-
+		// 远端ip
 		char remote_ip[INET_ADDRSTRLEN];
+		// 远端端口
 		int remote_port;
-
+		//是否验证身份
 		bool auth;
 		bool ignore_key_range;
-
+		// 输入缓冲区
 		Buffer *input;
+		// 输出缓冲区
 		Buffer *output;
-		
+		// 创建时间 秒
 		double create_time;
+		//活跃时间 秒
 		double active_time;
 
 		Link(bool is_server=false);

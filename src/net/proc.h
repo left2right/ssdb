@@ -17,12 +17,20 @@ class NetworkServer;
 #define PROC_ERROR		-1
 #define PROC_THREAD     1
 #define PROC_BACKEND	100
-
+// 通过宏定义处理函数
 #define DEF_PROC(f) int proc_##f(NetworkServer *net, Link *link, const Request &req, Response *resp)
 
 typedef std::vector<Bytes> Request;
+// 处理函数的类型
 typedef int (*proc_t)(NetworkServer *net, Link *link, const Request &req, Response *resp);
 
+/*
+Command类
+	FLAG_READ    : 读任务
+	FLAG_WRITE   : 写任务
+	FLAG_BACKEND : 需要新建线程背地执行的特殊任务（例如主从同步，日志处理）
+	FLAG_THREAD  : 需要放到任务线程池中执行的任务
+*/
 struct Command{
 	static const int FLAG_READ		= (1 << 0);
 	static const int FLAG_WRITE		= (1 << 1);
@@ -48,6 +56,7 @@ struct Command{
 struct ProcJob{
 	int result;
 	NetworkServer *serv;
+	// 任务涉及的连接
 	Link *link;
 	Command *cmd;
 	double stime;
@@ -101,7 +110,7 @@ struct BytesHash{
 	#endif
 #endif
 
-
+// 将所有的处理函数都注册到ProcMap中
 class ProcMap
 {
 private:

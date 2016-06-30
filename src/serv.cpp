@@ -313,6 +313,7 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 					slave->set_id(id);
 				}
 				slave->auth = c->get_str("auth");
+				// start里面会启动线程，执行Slave::_run_thread。连接master之后就发送sync140请求。并在此线程保存last_key和last_seq。
 				slave->start();
 				slaves.push_back(slave);
 			}

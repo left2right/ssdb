@@ -192,8 +192,10 @@ NetworkServer* NetworkServer::init(const Config &conf, int num_readers, int num_
 }
 
 void NetworkServer::serve(){
+	//生成leveldb写操作的线程池
 	writer = new ProcWorkerPool("writer");
 	writer->start(num_writers);
+	//生成leveldb读ß操作的线程池
 	reader = new ProcWorkerPool("reader");
 	reader->start(num_readers);
 
@@ -282,12 +284,14 @@ void NetworkServer::serve(){
 				continue;
 			}
 			// 如果收到的数据已经解析完成，则创建JOB对象供任务线程池处理
+			//走到此处表明，已经有一个完成的命令读取完毕
 			link->active_time = millitime();
 
 			ProcJob *job = new ProcJob();
 			job->link = link;
 			job->req = link->last_recv();
 			int result = this->proc(job);
+			//生成一个新的JOB，并抛给后端工作线程处理
 			if(result == PROC_THREAD){
 				fdes->del(link->fd());
 				continue;
@@ -447,7 +451,8 @@ int NetworkServer::proc_client_event(const Fdevent *fde, ready_list_t *ready_lis
 
 /*
 对ready_list的处理：
-	1.对ready_list中的每个Link调用recv函数解析，recv函数会根据格式试图从Link的读缓冲区中解析出完整的请求，如果当前的数据还不够解析出一个完整的请求，则返回的req为empty，这样会继续监听该Link的读事件，希望读取更多的数据。如果解析出完整的请求，将构造JOB(任务)分发处理。
+	1.对ready_list中的每个Link调用recv函数解析，recv函数会根据格式试图从Link的读缓冲区中解析出完整的请求，如果当前的数据还不够解析出一个完整的请求，则返回的req为empty，
+	  这样会继续监听该Link的读事件，希望读取更多的数据。如果解析出完整的请求，将构造JOB(任务)分发处理。
 	2.proc函数将根据JOB对任务进行分发处理：读任务线程池，写任务线程池，当前线程处理。
 */
 int NetworkServer::proc(ProcJob *job){

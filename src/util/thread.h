@@ -127,7 +127,9 @@ class WorkerPool{
 		};
 	private:
 		std::string name;
+		// 工作者池需要处理的JOB
 		Queue<JOB> jobs;
+		// 处理完成后的结果
 		SelectableQueue<JOB> results;
 
 		int num_workers;
@@ -257,6 +259,7 @@ int SelectableQueue<T>::push(const T item){
 	{
 		items.push(item);
 	}
+	// 写入管道通知主线程读取
 	if(::write(fds[1], "1", 1) == -1){
 		fprintf(stderr, "write fds error\n");
 		exit(0);
@@ -280,6 +283,7 @@ int SelectableQueue<T>::pop(T *data){
 	char buf[1];
 
 	while(1){
+		// 读取管道数据
 		n = ::read(fds[0], buf, 1);
 		if(n < 0){
 			if(errno == EINTR){
@@ -290,6 +294,7 @@ int SelectableQueue<T>::pop(T *data){
 		}else if(n == 0){
 			ret = -1;
 		}else{
+			// phtead_mutex同步读取操作
 			if(pthread_mutex_lock(&mutex) != 0){
 				return -1;
 			}
@@ -334,6 +339,7 @@ int WorkerPool<W, JOB>::pop(JOB *job){
 	return this->results.pop(job);
 }
 
+// 线程池启动
 template<class W, class JOB>
 void* WorkerPool<W, JOB>::_run_worker(void *arg){
 	struct run_arg *p = (struct run_arg*)arg;
@@ -347,12 +353,15 @@ void* WorkerPool<W, JOB>::_run_worker(void *arg){
 	worker->init();
 	while(1){
 		JOB job;
+		// 获取任务
 		if(tp->jobs.pop(&job) == -1){
 			fprintf(stderr, "jobs.pop error\n");
 			::exit(0);
 			break;
 		}
+		// 处理任务
 		worker->proc(job);
+		// 写入结果
 		if(tp->results.push(job) == -1){
 			fprintf(stderr, "results.push error\n");
 			::exit(0);
@@ -375,7 +384,7 @@ int WorkerPool<W, JOB>::start(int num_workers){
 		struct run_arg *arg = new run_arg();
 		arg->id = i;
 		arg->tp = this;
-
+		// 创建任务线程
 		err = pthread_create(&tid, NULL, &WorkerPool::_run_worker, arg);
 		if(err != 0){
 			fprintf(stderr, "can't create thread: %s\n", strerror(err));
