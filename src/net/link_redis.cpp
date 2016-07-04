@@ -30,6 +30,7 @@ enum STRATEGY{
 	STRATEGY_ZINCRBY,
 	STRATEGY_REMRANGEBYRANK,
 	STRATEGY_REMRANGEBYSCORE,
+	STRATEGY_CONFIG, //added for codis
 	STRATEGY_NULL
 };
 
@@ -112,6 +113,9 @@ static RedisCommand_raw cmds_raw[] = {
 	{STRATEGY_AUTO,		"lindex",		"qget", 			REPLY_BULK},
 	{STRATEGY_AUTO,		"lset",		    "qset", 			REPLY_STATUS},
 	{STRATEGY_AUTO,		"lrange",		"qslice",			REPLY_MULTI_BULK},
+
+	//added for codis
+	{STRATEGY_CONFIG,	"config",		"config",		REPLY_MULTI_BULK},
 
 	{STRATEGY_AUTO, 	NULL,			NULL,			0}
 };
