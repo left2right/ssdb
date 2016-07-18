@@ -22,3 +22,35 @@ int proc_config(NetworkServer *net, Link *link, const Request &req, Response *re
 	}
 	return 0;
 }
+
+int proc_slotshashkey(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsdel(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsmgrtone(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsmgrttagslot(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsmgrttagone(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
+
+int proc_slotsrestore(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	return 0;
+}
