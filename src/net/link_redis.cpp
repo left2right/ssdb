@@ -31,6 +31,7 @@ enum STRATEGY{
 	STRATEGY_REMRANGEBYRANK,
 	STRATEGY_REMRANGEBYSCORE,
 	STRATEGY_CONFIG, //added for codis
+	STRATEGY_SLOTSHASHKEY, //added for codis
 	STRATEGY_NULL
 };
 
@@ -116,7 +117,8 @@ static RedisCommand_raw cmds_raw[] = {
 
 	//added for codis
 	{STRATEGY_CONFIG,	"config",		"config",		REPLY_MULTI_BULK},
-
+	{STRATEGY_SLOTSHASHKEY,	"slotshashkey",		"slotshashkey",		REPLY_MULTI_BULK},
+	
 	{STRATEGY_AUTO, 	NULL,			NULL,			0}
 };
 
