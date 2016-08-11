@@ -28,7 +28,7 @@ int proc_slotshashkey(NetworkServer *net, Link *link, const Request &req, Respon
 
 	resp->push_back("ok");
 	for(int i=1; i<req.size(); i++){
-		int ret = req[i].slots();
+		int ret = (int)req[i].slots();
 		resp->add(ret);
 	}
 	return 0;

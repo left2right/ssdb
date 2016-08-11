@@ -91,14 +91,14 @@ class Bytes{
 			return size_;
 		}
 
-		int slots() const{
+		uint16_t slots() const{
 			int i;
     		uint32_t crc = ~0;
     		for (i = 0; i < size_; i ++) {
         		crc = crc32tab[(uint8_t)((char)crc ^ data_[i])] ^ (crc >> 8);
     		}
     		crc = ~crc;
-    		return crc & HASH_SLOTS_MASK;
+    		return (uint16_t)(crc & HASH_SLOTS_MASK);
 		}
 
 		int compare(const Bytes &b) const{
@@ -255,6 +255,17 @@ public:
 		p += sizeof(int64_t);
 		size -= sizeof(int64_t);
 		return sizeof(int64_t);
+	}
+	int read_uint16(uint16_t *ret){
+		if(size_t(size) < sizeof(uint16_t)){
+			return -1;
+		}
+		if(ret){
+			*ret = *(uint16_t *)p;
+		}
+		p += sizeof(uint16_t);
+		size -= sizeof(uint16_t);
+		return sizeof(uint16_t);
 	}
 	int read_uint64(uint64_t *ret){
 		if(size_t(size) < sizeof(uint64_t)){

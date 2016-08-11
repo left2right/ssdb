@@ -221,7 +221,8 @@ int SSDBImpl::key_range(std::vector<std::string> *keys){
 		Bytes ks = it->key();
 		if(ks.data()[0] == DataType::KV){
 			std::string n;
-			if(decode_kv_key(ks, &n) == -1){
+			uint16_t slot;
+			if(decode_kv_key(ks, &n, &slot) == -1){
 				ret = -1;
 			}else{
 				kstart = n;
@@ -235,7 +236,8 @@ int SSDBImpl::key_range(std::vector<std::string> *keys){
 		Bytes ks = it->key();
 		if(ks.data()[0] == DataType::KV){
 			std::string n;
-			if(decode_kv_key(ks, &n) == -1){
+			uint16_t slot;
+			if(decode_kv_key(ks, &n, &slot) == -1){
 				ret = -1;
 			}else{
 				kend = n;
