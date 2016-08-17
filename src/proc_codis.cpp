@@ -23,6 +23,13 @@ int proc_config(NetworkServer *net, Link *link, const Request &req, Response *re
 	return 0;
 }
 
+int proc_slaveof(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	CHECK_NUM_PARAMS(3);
+
+	resp->push_back("ok");
+	return 0;
+} 
+
 int proc_slotshashkey(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	CHECK_NUM_PARAMS(2);
 
