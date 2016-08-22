@@ -17,6 +17,7 @@ found in the LICENSE file.
 #include "slave.h"
 #include "net/server.h"
 #include "cluster.h"
+#include "slots.h"
 
 class SSDBServer
 {
@@ -25,10 +26,9 @@ private:
 	
 	std::string kv_range_s;
 	std::string kv_range_e;
-	
-	SSDB *meta;
 
 public:
+	SSDB *meta;
 	SSDBImpl *ssdb;
 	BackendDump *backend_dump;
 	BackendSync *backend_sync;

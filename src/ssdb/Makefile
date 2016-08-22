@@ -25,7 +25,7 @@ t_queue.o: ssdb.h t_queue.h t_queue.cpp
 binlog.o: ssdb.h binlog.h binlog.cpp
 	${CXX} ${CFLAGS} -c binlog.cpp
 ttl.o: ssdb.h ttl.h ttl.cpp
-	${CXX} ${CFLAGS} -c ttl.cpp
+	${CXX} ${CFLAGS} -c ttl.cpp	
 
 test:
 	${CXX} -o test.out test.cpp ${OBJS} ${CFLAGS} ${LIBS} ${CLIBS}
