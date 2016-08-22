@@ -49,10 +49,14 @@ int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response 
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
 	manager->init_slots();
 
-	std::string val;
-	val = manager->slotsinfo();
+	std::vector<int> ids_list;
+	manager->get_slot_ids(&ids_list);
 	resp->push_back("ok");
-	resp->push_back(val);
+	std::vector<int>::iterator it;
+	for(it=ids_list.begin(); it!=ids_list.end(); it++){
+		resp->add(*it);
+		//resp->add(1);
+	}
 
 	delete(manager);
 	return 0;

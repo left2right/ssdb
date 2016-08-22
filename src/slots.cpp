@@ -18,7 +18,6 @@ std::string SlotKeyRange::str() const{
 		buf.append(kv_begin);
 		buf.append(" end:");
 		buf.append(kv_end);
-		log_debug("%s ,%s, %s", kv_begin.String().c_str(), kv_end.String().c_str(), buf.c_str());
 		return  buf;
 }
 
@@ -93,7 +92,11 @@ int SlotsManager::get_slot_list(std::vector<Slot> *list){
 	return 0;
 }
 
-int SlotsManager::get_slot_ids(std::vector<int> *list){
+int SlotsManager::get_slot_ids(std::vector<int> *ids_list){
+	std::vector<Slot>::iterator it;
+	for(it=slots_list.begin(); it!=slots_list.end(); it++){
+		ids_list->push_back(it->id);
+	}
 	return 0;
 }
 
@@ -130,20 +133,76 @@ int SlotsManager::migrate_slot_keys(std::string addr, int port, int timeout, int
 		return -1;
 	}
 	Slot *slot = get_slot_ref(slot_id);
-	std::string val;
-	if (db->get(slot->range.kv_begin, &val) < 0){
-		log_error("get key %s error!", slot->range.kv_begin.c_str());
-	}
-	ssdb::Status s;
-	log_debug("slots migrate 5 key %s val: %s", slot->range.kv_begin.c_str(), val.c_str());
-	s = client->set(slot->range.kv_begin, val);
-	if(!s.ok()){
-		log_error("dst server error! %s", s.code().c_str());
-		return -1;
-	}
-	if (db->del(slot->range.kv_begin) < 0){
-		log_error("del key %s error!", slot->range.kv_begin.c_str());
-	}
+	if (!slot->range.kv_empty())
+	{
+		std::string val;
+		if (db->get(slot->range.kv_begin, &val) < 0){
+			log_error("get key %s error!", slot->range.kv_begin.c_str());
+		}
+		ssdb::Status s;
+		s = client->set(slot->range.kv_begin, val);
+		if(!s.ok()){
+			log_error("dst server error! %s", s.code().c_str());
+			return -1;
+		}
+		if (db->del(slot->range.kv_begin) < 0){
+			log_error("del key %s error!", slot->range.kv_begin.c_str());
+			return -1;
+		}
+		return 1;
+	}else if (!slot->range.hash_empty())
+	{
+		HIterator *it = db->hscan(slot->range.hash_begin, "", "", 2000000000);
+		ssdb::Status s;
+		while(it->next()){
+			s = client->hset(slot->range.hash_begin, it->key, it->val);
+			if(!s.ok()){
+				log_error("dst server error! %s", s.code().c_str());
+				return -1;
+			}
+		}
+		if (db->hclear(slot->range.hash_begin) < 0){
+			log_error("del hash name %s error!", slot->range.hash_begin.c_str());
+			return -1;
+		}
+		return 1;
+	}else if (!slot->range.queue_empty())
+	{
+		int64_t count = 0;
+		while(1){
+			std::string item;
+			int ret = db->qpop_front(slot->range.queue_begin, &item);
+			ssdb::Status s;
+			s = client->qpush(slot->range.queue_begin, item, &count);
+			if(!s.ok()){
+				log_error("dst server error! %s", s.code().c_str());
+				return -1;
+			}
+			if(ret == 0){
+				break;
+			}
+			if(ret == -1){
+				return -1;
+			}
+		}
+	}else if (!slot->range.zset_empty())
+	{
+		ZIterator *it = db->zrange(slot->range.zset_begin, 0, 2000000000);
+		ssdb::Status s;
+		while(it->next()){
+			//Bytes sc = new Bytes(it->score);
+			s = client->zset(slot->range.zset_begin, it->key, Bytes(it->score).Int64());
+			if(!s.ok()){
+				log_error("dst server error! %s", s.code().c_str());
+				return -1;
+			}
+			if (db->zdel(slot->range.zset_begin, it->key) < 0){
+				log_error("del zset name %s key %s error!", slot->range.zset_begin.c_str(), (it->key).c_str());
+				return -1;
+			}
+		}
+		return 1;
+	}	
 	return 0;
 }
 

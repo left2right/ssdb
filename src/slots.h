@@ -58,6 +58,18 @@ public:
 		this->zset_begin = krange.zset_begin;
 		this->zset_end = krange.zset_end;
 	}
+	bool kv_empty() const{
+		return kv_begin == "" && kv_end == "";
+	}
+	bool hash_empty() const{
+		return hash_begin == "" && hash_end == "";
+	}
+	bool queue_empty() const{
+		return queue_begin == "" && queue_end == "";
+	}
+	bool zset_empty() const{
+		return zset_begin == "" && zset_end == "";
+	}
 	bool empty() const{
 		return kv_begin == "" && kv_end == "" && hash_begin == "" && hash_end == "" && queue_begin == "" && queue_end == "" && zset_begin == "" && zset_end == "";
 	}
@@ -88,7 +100,7 @@ public:
 
 	int get_slot(int id, Slot *slot);
 	Slot* get_slot_ref(int id);
-	int get_slot_list(std::vector<Slot> *list);
+	int get_slot_list(std::vector<Slot> *ids_list);
 	int get_slot_ids(std::vector<int> *list);
 
 	int add_slot(int id, SlotKeyRange range);
