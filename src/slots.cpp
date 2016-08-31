@@ -157,7 +157,7 @@ int SlotsManager::slotsmgrtslot(std::string addr, int port, int timeout, int slo
 	arg->port = port;
 	arg->timeout = timeout;
 	arg->slot_id = slot_id;
-	arg->manager = this;
+	arg->manager = new SlotsManager(this->db, this->meta);
 	log_info("slots migrate slot %d begin", slot_id);
 	int err = pthread_create(&tid, NULL, &SlotsManager::_run_slotsmgrtslot, arg);
 	if(err != 0){
@@ -241,6 +241,7 @@ slot_empty:
 		log_error("slot %d migrate set finished status error!", slot_id);
 		//return -1;
 	}
+	delete(manager);
 	return (void *)NULL;
 }
 

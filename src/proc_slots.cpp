@@ -73,7 +73,6 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 	std::string val;
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
 	int ret = manager->slot_status(slot_id);
-	//delete(manager);
 
 	switch(ret){
 	case 0: 
@@ -97,6 +96,7 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 		resp->push_back("1");
 		break;	
 	}
+	delete(manager);
 	return 0;
 }
 

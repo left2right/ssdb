@@ -103,6 +103,10 @@ class SlotsManager
 public:
 	SlotsManager(SSDB *db, SSDB *meta);
 	~SlotsManager();
+	SlotsManager(const SlotsManager &manager){
+		this->db = manager.db;
+		this->meta = manager.meta;
+	}
 
 	int init_slots_list();
 	std::string slotsinfo();
