@@ -137,6 +137,7 @@ DEF_PROC(slotshashkey);
 DEF_PROC(slotsinfo);
 DEF_PROC(slotsdel);
 DEF_PROC(slotsmgrtslot);
+DEF_PROC(slotsmgrtstop);
 DEF_PROC(slotsmgrtone);
 DEF_PROC(slotsmgrttagslot);
 DEF_PROC(slotsmgrttagone);
@@ -277,12 +278,12 @@ void SSDBServer::reg_procs(NetworkServer *net){
 	REG_PROC(slotsinfo, "rt");
     REG_PROC(slotsdel, "wt");
     REG_PROC(slotsmgrtslot, "wt");
+    REG_PROC(slotsmgrtstop, "wt");
     REG_PROC(slotsmgrtone, "wt");
     REG_PROC(slotsmgrttagslot, "wt");
     REG_PROC(slotsmgrttagone, "wt");
     REG_PROC(slotsrestore, "wt");
 }
-
 
 SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer *net){
 	this->ssdb = (SSDBImpl *)ssdb;

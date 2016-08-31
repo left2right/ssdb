@@ -12,8 +12,12 @@ found in the LICENSE file.
 #include "util/strings.h"
 #include "util/thread.h"
 #include "util/bytes.h"
+#include "ssdb/const.h"
+#include "ssdb/ssdb.h"
+#include "net/link.h"
 #include <string>
 #include <vector>
+//#include <pthread.h>
 
 namespace ssdb{
 	class Client;
@@ -31,8 +35,9 @@ std::string slot_guard(const char type, uint16_t id, const char *key){
 
 class SlotStatus{
 public:
-	static const char NORMAL		= 0;
-	static const char MIGRATING		= 1;
+	static const int EMPYT			= 0;
+	static const int NORMAL			= 1;
+	static const int MIGRATING		= 2;
 };
 
 class SlotKeyRange{
@@ -81,6 +86,10 @@ public:
 	int id;
 	SlotKeyRange range;
 	Slot(){}
+	Slot(int id, SlotKeyRange range){
+		this->id=id;
+		this->range=range;
+	}
 	Slot(const Slot &slot){
 		this->id=slot.id;
 		this->range=slot.range;
@@ -95,7 +104,7 @@ public:
 	SlotsManager(SSDB *db, SSDB *meta);
 	~SlotsManager();
 
-	int init_slots();
+	int init_slots_list();
 	std::string slotsinfo();
 
 	int get_slot(int id, Slot *slot);
@@ -108,8 +117,21 @@ public:
 
 	//int update_slot_key_range(int id, const char type, std::string & key);
 
-	int migrate_slot(std::string addr, int port, int timeout, int slot);
-	int migrate_slot_keys(std::string addr, int port, int timeout, int slot);
+	//int migrate_slot(std::string addr, int port, int timeout, int slot);
+	//int migrate_slot_keys(std::string addr, int port, int timeout, int slot);
+
+	//migrate slot keys || key
+	int slotsmgrtslot(std::string addr, int port, int timeout, int slot);
+	int slotsmgrtstop();
+	int slotsmgrtone(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_kv(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_hash(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_queue(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_zset(std::string addr, int port, int timeout, std::string name);
+
+	//slot functions
+	int slot_status(int slot_id);
+	int slot_init(int slot_id);
 
 private:
 	SSDB *db;
@@ -121,7 +143,35 @@ private:
 	std::vector<Slot> slots_list;
 	std::string slots_hash_key;
 	Mutex mutex;
+
+	struct run_arg{
+		std::string addr;
+		int port;
+		int timeout;
+		int slot_id;
+		const SlotsManager *manager;
+	};
+	static void* _run_slotsmgrtslot(void *arg);
 };
+/*
+class SlotMigrate
+{
+public:
+	SlotMigrate(SSDB *db, int id);
+	~ SlotMigrate();
+private:
+	SSDB *db;
+	int id;
+};*/
+
+
+
+
+
+
+
+
+
 
 
 #endif
