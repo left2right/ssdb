@@ -34,6 +34,8 @@ int proc_slaveof(NetworkServer *net, Link *link, const Request &req, Response *r
 int proc_slotshashkey(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	CHECK_NUM_PARAMS(2);
 
+	log_info("slotshashkey get key hash slot value");
+
 	resp->push_back("ok");
 	for(int i=1; i<req.size(); i++){
 		int ret = (int)req[i].slots();
@@ -45,6 +47,8 @@ int proc_slotshashkey(NetworkServer *net, Link *link, const Request &req, Respon
 int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	CHECK_NUM_PARAMS(1);
 	SSDBServer *serv = (SSDBServer *)net->data;
+
+	log_info("slotsinfo get slots in this ssdb");
 
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
 	std::string info = manager->slotsinfo();
@@ -68,7 +72,7 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 	int timeout = req[3].Int();
 	int slot_id = req[4].Int();
 
-	log_debug("Slots %d migrate to %s:%d", slot_id, addr.c_str(), port);
+	log_info("slotsmgrtslot migrate slot %d to %s:%d", slot_id, addr.c_str(), port);
 
 	std::string val;
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
@@ -77,20 +81,20 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 	switch(ret){
 	case 0: 
 	case -1:
-		log_debug("Slots %d migrate to %s:%d, but not running with status %d", slot_id, addr.c_str(), port, ret);
+		log_info("slotsmgrtslot migrate slot %d to %s:%d with status %d", slot_id, addr.c_str(), port, ret);
 		resp->push_back("ok");
 		resp->push_back("0");
 		resp->push_back("0");
 		break;
 	case 1:
-		log_debug("Slots %d migrate to %s:%d begin!", slot_id, addr.c_str(), port);
+		log_info("slotsmgrtslot migrate slot %d to %s:%d begin!", slot_id, addr.c_str(), port);
 		manager->slotsmgrtslot(addr, port, timeout, slot_id);
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
 		break;
 	case 2:
-		log_debug("Slots %d migrate to %s:%d running!", slot_id, addr.c_str(), port);
+		log_info("slotsmgrtslot migrate slot %d to %s:%d running!", slot_id, addr.c_str(), port);
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
@@ -108,7 +112,7 @@ int proc_slotsmgrtone(NetworkServer *net, Link *link, const Request &req, Respon
 	int port = req[2].Int();
 	int timeout = req[3].Int();
 	std::string name = req[4].String();
-	log_debug("Migrate %s to %s:%d", name.c_str(), addr.c_str(), port);
+	log_info("slotsmgrtone migrate  %s to %s:%d begin", name.c_str(), addr.c_str(), port);
 
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
 	int ret = manager->slotsmgrtone(addr, port, timeout, name);
@@ -117,8 +121,10 @@ int proc_slotsmgrtone(NetworkServer *net, Link *link, const Request &req, Respon
 	resp->push_back("ok");
 	if (ret==1)
 	{
+		log_info("slotsmgrtone migrate  %s to %s:%d finish", name.c_str(), addr.c_str(), port);
 		resp->push_back("1");
 	}else{
+		log_info("slotsmgrtone migrate  %s to %s:%d, but key not exists", name.c_str(), addr.c_str(), port);
 		resp->push_back("0");
 	}
 	
@@ -128,6 +134,7 @@ int proc_slotsmgrtone(NetworkServer *net, Link *link, const Request &req, Respon
 int proc_slotsmgrtstop(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	CHECK_NUM_PARAMS(1);
 
+	log_info("slotsmgrtstop stop migrating, just hclear SLOTS_HASH meta key, more work to do");
 	SSDBServer *serv = (SSDBServer *)net->data;
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
 	int ret = manager->slotsmgrtstop();

@@ -37,7 +37,7 @@ int SlotsManager::init_slots_list(){
 	for (i = 0; i < HASH_SLOTS_SIZE; ++i){
 		SlotKeyRange krange = load_slot_range(i);
 		if (!krange.empty()){
-			log_debug("init_slots slot: %d ,key range %s", i, krange.kv_begin.c_str());
+			log_info("slot: %d exists", i);
 			add_slot(i, krange);
 		}
 	}
@@ -45,14 +45,13 @@ int SlotsManager::init_slots_list(){
 }
 
 int SlotsManager::slot_status(int slot_id){
+	log_info("get slot %d status", slot_id);
 	std::string status;
-	meta->hdel(slots_hash_key, str(slot_id));
+	//meta->hdel(slots_hash_key, str(slot_id));
 	int ret = meta->hget(slots_hash_key, str(slot_id), &status);
 	if (ret==1){
-		log_debug("here %d", Bytes(status).Int());
 		return Bytes(status).Int();
 	}else {
-		log_debug("here 2 %d", slot_init(slot_id));
 		return slot_init(slot_id);
 	}
 	return -1;
@@ -135,7 +134,6 @@ int SlotsManager::del_slot(int id){
 }
 
 std::string SlotsManager::slotsinfo(){
-	log_debug("Get slotsinfo begin");
 	init_slots_list();
 	std::string val;
 	for(std::vector<Slot>::iterator it=slots_list.begin(); it!=slots_list.end(); it++){
@@ -158,7 +156,6 @@ int SlotsManager::slotsmgrtslot(std::string addr, int port, int timeout, int slo
 	arg->timeout = timeout;
 	arg->slot_id = slot_id;
 	arg->manager = new SlotsManager(this->db, this->meta);
-	log_info("slots migrate slot %d begin", slot_id);
 	int err = pthread_create(&tid, NULL, &SlotsManager::_run_slotsmgrtslot, arg);
 	if(err != 0){
 		fprintf(stderr, "can't create thread: %s\n", strerror(err));
@@ -175,7 +172,6 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 	int timeout = p->timeout;
 	int slot_id = p->slot_id;
 	SlotsManager *manager = (SlotsManager*)p->manager;
-	log_info("migrate slot: %d ,to %s:%d begin", slot_id, addr.c_str(), port);
 	for (int i = 0; i < sizeof(types); i++){
 		std::string guard = slot_guard(types[i], (uint16_t)slot_id, "");
 		Iterator *it;
@@ -208,7 +204,7 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 						goto slot_empty;
 					}
 					break;
-				case DataType::ZSIZE:
+				case DataType::QSIZE:
 					if(decode_zsize_key(ks, &name, &slot) == -1){
 						log_error("migrate slot at decode key error");
 						goto slot_empty;
@@ -219,7 +215,7 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 						goto slot_empty;
 					}
 					break;
-				case DataType::QSIZE:
+				case DataType::ZSIZE:
 					if(decode_qsize_key(ks, &name, &slot) == -1){
 						log_error("migrate slot at decode key error");
 						goto slot_empty;
@@ -235,11 +231,10 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 		}
 	}
 slot_empty:
-	log_info("migrate slot: %d ,to %s:%d finished", slot_id, addr.c_str(), port);
+	log_info("slotsmgrtslot migrate slot: %d ,to %s:%d finished", slot_id, addr.c_str(), port);
 	int ret2 = manager->meta->hdel(manager->slots_hash_key, str(slot_id));
 	if(ret2 == -1){
 		log_error("slot %d migrate set finished status error!", slot_id);
-		//return -1;
 	}
 	delete(manager);
 	return (void *)NULL;
@@ -290,6 +285,7 @@ int SlotsManager::slotsmgrtslot_kv(std::string addr, int port, int timeout, std:
 		log_error("del key %s error!", name.c_str());
 		return -1;
 	}
+	log_info("migrate kv key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
 	return 1;
 }
 
@@ -311,6 +307,7 @@ int SlotsManager::slotsmgrtslot_hash(std::string addr, int port, int timeout, st
 		log_error("del hash name %s error!", name.c_str());
 		return -1;
 	}
+	log_info("migrate hash key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
 	return 1;
 }
 
@@ -336,6 +333,7 @@ int SlotsManager::slotsmgrtslot_queue(std::string addr, int port, int timeout, s
 			return -1;
 		}
 	}
+	log_info("migrate queue key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
 	return 1;
 }
 
@@ -347,7 +345,6 @@ int SlotsManager::slotsmgrtslot_zset(std::string addr, int port, int timeout, st
 	ZIterator *it = db->zrange(name, 0, 2000000000);
 	ssdb::Status s;
 	while(it->next()){
-		//Bytes sc = new Bytes(it->score);
 		s = client->zset(name, it->key, Bytes(it->score).Int64());
 		if(!s.ok()){
 			log_error("dst server error! %s", s.code().c_str());
@@ -358,13 +355,14 @@ int SlotsManager::slotsmgrtslot_zset(std::string addr, int port, int timeout, st
 			return -1;
 		}
 	}
+	log_info("migrate zset key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
 	return 1;
 }
 
 //SlotsManager private functions
 
 SlotKeyRange SlotsManager::load_slot_range(int id){
-	log_debug("Init slot %d", id);
+	log_debug("Get slot %d key range", id);
 	SlotKeyRange range;
 	range.kv_begin = get_range_begin(id, DataType::KV);
 	range.kv_end = get_range_end(id, DataType::KV);

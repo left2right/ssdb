@@ -119,11 +119,6 @@ public:
 	int add_slot(int id, SlotKeyRange range);
 	int del_slot(int id);
 
-	//int update_slot_key_range(int id, const char type, std::string & key);
-
-	//int migrate_slot(std::string addr, int port, int timeout, int slot);
-	//int migrate_slot_keys(std::string addr, int port, int timeout, int slot);
-
 	//migrate slot keys || key
 	int slotsmgrtslot(std::string addr, int port, int timeout, int slot);
 	int slotsmgrtstop();
@@ -157,16 +152,6 @@ private:
 	};
 	static void* _run_slotsmgrtslot(void *arg);
 };
-/*
-class SlotMigrate
-{
-public:
-	SlotMigrate(SSDB *db, int id);
-	~ SlotMigrate();
-private:
-	SSDB *db;
-	int id;
-};*/
 
 
 
