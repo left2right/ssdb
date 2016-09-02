@@ -35,7 +35,6 @@ std::string slot_guard(const char type, uint16_t id, const char *key){
 
 class SlotStatus{
 public:
-	static const int EMPYT			= 0;
 	static const int NORMAL			= 1;
 	static const int MIGRATING		= 2;
 };
@@ -78,7 +77,14 @@ public:
 	bool empty() const{
 		return kv_begin == "" && kv_end == "" && hash_begin == "" && hash_end == "" && queue_begin == "" && queue_end == "" && zset_begin == "" && zset_end == "";
 	}
-	std::string str() const;
+	std::string str() const{
+		std::string buf;
+		buf.append("begin:");
+		buf.append(kv_begin);
+		buf.append(" end:");
+		buf.append(kv_end);
+		return  buf;
+	}
 };
 
 class Slot{
@@ -103,30 +109,22 @@ class SlotsManager
 public:
 	SlotsManager(SSDB *db, SSDB *meta);
 	~SlotsManager();
-	SlotsManager(const SlotsManager &manager){
-		this->db = manager.db;
-		this->meta = manager.meta;
-	}
+	SlotsManager(const SlotsManager &manager);
 
+	//Slot List api
 	int init_slots_list();
-	std::string slotsinfo();
-
 	int get_slot(int id, Slot *slot);
 	Slot* get_slot_ref(int id);
 	int get_slot_list(std::vector<Slot> *ids_list);
 	int get_slot_ids(std::vector<int> *list);
-
 	int add_slot(int id, SlotKeyRange range);
 	int del_slot(int id);
 
-	//migrate slot keys || key
+	//codis slot api 
+	int slotsinfo(std::string &val);
 	int slotsmgrtslot(std::string addr, int port, int timeout, int slot);
 	int slotsmgrtstop();
 	int slotsmgrtone(std::string addr, int port, int timeout, std::string name);
-	int slotsmgrtslot_kv(std::string addr, int port, int timeout, std::string name);
-	int slotsmgrtslot_hash(std::string addr, int port, int timeout, std::string name);
-	int slotsmgrtslot_queue(std::string addr, int port, int timeout, std::string name);
-	int slotsmgrtslot_zset(std::string addr, int port, int timeout, std::string name);
 
 	//slot functions
 	int slot_status(int slot_id);
@@ -138,6 +136,14 @@ private:
 	SlotKeyRange load_slot_range(int id);
 	std::string get_range_begin(int id, const char tyep);
 	std::string get_range_end(int id, const char tyep);
+
+	int set_slot_meta_status(int slot_id, const int status);
+	int del_slot_meta_status(int slot_id);
+
+	int slotsmgrtslot_kv(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_hash(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_queue(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_zset(std::string addr, int port, int timeout, std::string name);
 
 	std::vector<Slot> slots_list;
 	std::string slots_hash_key;

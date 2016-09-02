@@ -12,25 +12,19 @@ found in the LICENSE file.
 #include "ssdb/t_queue.h"
 #include "SSDB_client.h"
 
-std::string SlotKeyRange::str() const{
-		std::string buf;
-		buf.append("begin:");
-		buf.append(kv_begin);
-		buf.append(" end:");
-		buf.append(kv_end);
-		return  buf;
-}
-
 SlotsManager::SlotsManager(SSDB *db, SSDB *meta){
-	log_debug("SlotsManager init");
 	this->db = db;
 	this->meta = meta;
 	this->slots_hash_key="SLOTS_HASH";
 }
 
-SlotsManager::~SlotsManager(){
-	log_debug("SlotsManager finalized");
+SlotsManager::SlotsManager(const SlotsManager &manager){
+		this->db = manager.db;
+		this->meta = manager.meta;
+		this->slots_hash_key="SLOTS_HASH";
 }
+
+SlotsManager::~SlotsManager(){}
 
 int SlotsManager::init_slots_list(){
 	int i =0;
@@ -42,39 +36,6 @@ int SlotsManager::init_slots_list(){
 		}
 	}
 	return 0;
-}
-
-int SlotsManager::slot_status(int slot_id){
-	log_info("get slot %d status", slot_id);
-	std::string status;
-	//meta->hdel(slots_hash_key, str(slot_id));
-	int ret = meta->hget(slots_hash_key, str(slot_id), &status);
-	if (ret==1){
-		return Bytes(status).Int();
-	}else {
-		return slot_init(slot_id);
-	}
-	return -1;
-}
-
-int SlotsManager::slot_init(int slot_id){
-	SlotKeyRange krange = load_slot_range(slot_id);
-	if (!krange.empty()){
-		int ret = meta->hset(slots_hash_key, str(slot_id), str(SlotStatus::NORMAL));
-		if(ret == -1){
-			log_error("slot %d init  error!", slot_id);
-			return -1;
-		}
-		return 1;
-	}else{
-		int ret = meta->hset(slots_hash_key, str(slot_id), str(SlotStatus::EMPYT));
-		if(ret == -1){
-			log_error("slot %d init  error!", slot_id);
-			return -1;
-		}
-		return 0;
-	}
-	return -1;
 }
 
 int SlotsManager::get_slot(int id, Slot *ret){
@@ -133,22 +94,65 @@ int SlotsManager::del_slot(int id){
 	return 0;
 }
 
-std::string SlotsManager::slotsinfo(){
+int SlotsManager::slotsinfo(std::string &val){
 	init_slots_list();
-	std::string val;
 	for(std::vector<Slot>::iterator it=slots_list.begin(); it!=slots_list.end(); it++){
 		val.append("\n");
 		val.append(str(it->id));
 	}
+	return 0;
+}
+
+/*
+std::string SlotsManager::slotsinfo(){
+	Iterator *it;
+	it = db->iterator("", "", 100000);
+	std::string val="";
+	while(it->next()){
+		Bytes ks = it->key();
+		if(ks.data()[0] == DataType::KV){
+			std::string tmpstr;
+			uint16_t tmpslot;
+			decode_kv_key(ks, &tmpstr, &tmpslot);
+			log_debug("iterator database key %s and slot %d", tmpstr.c_str(), tmpslot);
+		}else {
+			log_debug("iterator database type %c", ks.data()[0]);
+		}
+	}
 	return val;
+}
+*/
+
+
+int SlotsManager::slot_status(int slot_id){
+	log_info("get slot %d status", slot_id);
+	std::string status;
+	int ret = meta->hget(slots_hash_key, str(slot_id), &status);
+	if (ret==1){
+		return Bytes(status).Int();
+	}else {
+		return slot_init(slot_id);
+	}
+	return -1;
+}
+
+int SlotsManager::slot_init(int slot_id){
+	SlotKeyRange krange = load_slot_range(slot_id);
+	if (!krange.empty()){
+		int ret = meta->hset(slots_hash_key, str(slot_id), str(SlotStatus::NORMAL));
+		if(ret == -1){
+			log_error("slot %d init  error!", slot_id);
+			return -1;
+		}
+		return 1;
+	}else{
+		log_info("slot %d empty", slot_id);
+		return 0;
+	}
+	return -1;
 }
 
 int SlotsManager::slotsmgrtslot(std::string addr, int port, int timeout, int slot_id){
-	int ret = meta->hset(slots_hash_key, str(slot_id), str(SlotStatus::MIGRATING));
-	if(ret == -1){
-		log_error("slot %d migrate set status error!", slot_id);
-		return -1;
-	}
 	pthread_t tid;
 	struct run_arg *arg = new run_arg();
 	arg->addr = addr;
@@ -158,7 +162,13 @@ int SlotsManager::slotsmgrtslot(std::string addr, int port, int timeout, int slo
 	arg->manager = new SlotsManager(this->db, this->meta);
 	int err = pthread_create(&tid, NULL, &SlotsManager::_run_slotsmgrtslot, arg);
 	if(err != 0){
-		fprintf(stderr, "can't create thread: %s\n", strerror(err));
+		log_error("can't create thread: %s\n", strerror(err));
+		return -1;
+	}
+	int ret = meta->hset(slots_hash_key, str(slot_id), str(SlotStatus::MIGRATING));
+	if(ret == -1){
+		log_error("slot %d migrate set status error!", slot_id);
+		return -1;
 	}
 	return 0;
 }
@@ -172,10 +182,11 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 	int timeout = p->timeout;
 	int slot_id = p->slot_id;
 	SlotsManager *manager = (SlotsManager*)p->manager;
+
 	for (int i = 0; i < sizeof(types); i++){
 		std::string guard = slot_guard(types[i], (uint16_t)slot_id, "");
 		Iterator *it;
-		it = manager->db->iterator(guard, "", 1);
+		it = manager->db->iterator(guard, "", 100000);
 		while(it->next()){
 			Bytes ks = it->key();
 			if(ks.data()[0] == types[i]){
@@ -185,59 +196,89 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 				case DataType::KV:
 					if(decode_kv_key(ks, &name, &slot) == -1){
 						log_error("migrate slot at decode key error");
-						goto slot_empty;
+						manager->set_slot_meta_status(slot_id, SlotStatus::NORMAL);
+						delete(manager);
+						return (void *)NULL;
 					}
 					if(slot == slot_id){
 						manager->slotsmgrtslot_kv(addr, port, timeout, name);
 					}else{
-						goto slot_empty;
+						goto loop_types;
 					}
 					break;
 				case DataType::HSIZE:
 					if(decode_hsize_key(ks, &name, &slot) == -1){
 						log_error("migrate slot at decode key error");
-						goto slot_empty;
+						manager->set_slot_meta_status(slot_id, SlotStatus::NORMAL);
+						delete(manager);
+						return (void *)NULL;
 					}
 					if(slot == slot_id){
 						manager->slotsmgrtslot_hash(addr, port, timeout, name);
 					}else{
-						goto slot_empty;
+						goto loop_types;
 					}
 					break;
 				case DataType::QSIZE:
 					if(decode_zsize_key(ks, &name, &slot) == -1){
 						log_error("migrate slot at decode key error");
-						goto slot_empty;
+						manager->set_slot_meta_status(slot_id, SlotStatus::NORMAL);
+						delete(manager);
+						return (void *)NULL;
 					}
 					if(slot == slot_id){
 						manager->slotsmgrtslot_queue(addr, port, timeout, name);
 					}else{
-						goto slot_empty;
+						goto loop_types;
 					}
 					break;
 				case DataType::ZSIZE:
 					if(decode_qsize_key(ks, &name, &slot) == -1){
 						log_error("migrate slot at decode key error");
-						goto slot_empty;
+						manager->set_slot_meta_status(slot_id, SlotStatus::NORMAL);
+						delete(manager);
+						return (void *)NULL;
 					}
 					if(slot == slot_id){
 						manager->slotsmgrtslot_zset(addr, port, timeout, name);
 					}else{
-						goto slot_empty;
+						log_info("slotsmgrtslot migrate slot: %d ,to %s:%d finished", slot_id, addr.c_str(), port);
+						manager->del_slot_meta_status(slot_id);
+						delete(manager);
+						return (void *)NULL;
 					}
 					break;
 				}
+			}else {
+				goto loop_types;
 			}
 		}
+		loop_types:
+			log_debug("slotsmgrtslot migrate slot %d type %c finished", slot_id, types[i]);
 	}
-slot_empty:
-	log_info("slotsmgrtslot migrate slot: %d ,to %s:%d finished", slot_id, addr.c_str(), port);
-	int ret2 = manager->meta->hdel(manager->slots_hash_key, str(slot_id));
-	if(ret2 == -1){
-		log_error("slot %d migrate set finished status error!", slot_id);
-	}
+	manager->del_slot_meta_status(slot_id);
 	delete(manager);
 	return (void *)NULL;
+
+}
+
+int SlotsManager::set_slot_meta_status(int slot_id, const int status){
+	int ret = this->meta->hset(slots_hash_key, str(slot_id), str(status));
+	if(ret == -1){
+		log_error("set slot %d meta status error!", slot_id);
+		return -1;
+	}
+	return 0;
+}
+
+int SlotsManager::del_slot_meta_status(int slot_id){
+	int ret = this->meta->hdel(slots_hash_key, str(slot_id));
+	if(ret == -1){
+		log_error("hdel slot %d meta status error!", slot_id);
+		return -1;
+	}
+	log_info("del slot %d meta status", slot_id);
+	return 0;
 }
 
 int SlotsManager::slotsmgrtstop(){

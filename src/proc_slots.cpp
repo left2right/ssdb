@@ -51,8 +51,13 @@ int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response 
 	log_info("slotsinfo get slots in this ssdb");
 
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
-	std::string info = manager->slotsinfo();
+	std::string info;
+	int ret = manager->slotsinfo(info);
 	delete(manager);
+	if (ret != 0){
+		resp->push_back("error");
+		return -1;
+	}
 
 	resp->push_back("ok");
 	resp->push_back(info);
@@ -78,17 +83,25 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
 	int ret = manager->slot_status(slot_id);
 
+	int ret2;
 	switch(ret){
 	case 0: 
-	case -1:
-		log_info("slotsmgrtslot migrate slot %d to %s:%d with status %d", slot_id, addr.c_str(), port, ret);
+		log_info("slotsmgrtslot migrate slot %d to %s:%d, but slot is empty", slot_id, addr.c_str(), port);
 		resp->push_back("ok");
 		resp->push_back("0");
 		resp->push_back("0");
 		break;
+	case -1:
+		log_error("slotsmgrtslot migrate slot %d to %s:%d exception", slot_id, addr.c_str(), port);
+		resp->push_back("error");
+		break;
 	case 1:
 		log_info("slotsmgrtslot migrate slot %d to %s:%d begin!", slot_id, addr.c_str(), port);
-		manager->slotsmgrtslot(addr, port, timeout, slot_id);
+		ret2 = manager->slotsmgrtslot(addr, port, timeout, slot_id);
+		if (ret2 == -1){
+			resp->push_back("error");
+			return 0;
+		}
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
