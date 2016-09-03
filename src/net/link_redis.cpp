@@ -122,7 +122,9 @@ static RedisCommand_raw cmds_raw[] = {
 	{STRATEGY_SLAVEOF,	"slaveof",		"slaveof",		REPLY_STATUS},
 	{STRATEGY_SLOTBULK,	"slotshashkey",		"slotshashkey",		REPLY_MULTI_BULK},
 	{STRATEGY_SLOTBULK,	"slotsinfo",		"slotsinfo",		REPLY_MULTI_BULK},
+	{STRATEGY_SLOTBULK,	"slotsmgrttagslot",		"slotsmgrttagslot",		REPLY_MULTI_BULK},
 	{STRATEGY_SLOTBULK,	"slotsmgrtslot",		"slotsmgrtslot",		REPLY_MULTI_BULK},
+	{STRATEGY_SLOTSTATUS,	"slotsmgrttagone",		"slotsmgrttagone",		REPLY_STATUS},
 	{STRATEGY_SLOTSTATUS,	"slotsmgrtone",		"slotsmgrtone",		REPLY_STATUS},
 	{STRATEGY_SLOTSTATUS,	"slotsmgrtstop",		"slotsmgrtstop",		REPLY_STATUS},
 	
