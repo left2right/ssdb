@@ -293,10 +293,11 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 	this->reg_procs(net);
 
 	int sync_speed = conf.get_num("replication.sync_speed");
+	std::string ttl_type = conf.get_str("server.ttl_type");
 
 	backend_dump = new BackendDump(this->ssdb);
 	backend_sync = new BackendSync(this->ssdb, sync_speed);
-	expiration = new ExpirationHandler(this->ssdb, this->meta);
+	expiration = new ExpirationHandler(this->ssdb, this->meta, ttl_type);
 	slots_manager = new SlotsManager(this->ssdb, this->meta, this->expiration);
 	
 	cluster = new Cluster(this->ssdb);

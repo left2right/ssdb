@@ -203,18 +203,8 @@ int proc_qclear(NetworkServer *net, Link *link, const Request &req, Response *re
 	SSDBServer *serv = (SSDBServer *)net->data;
 	CHECK_NUM_PARAMS(2);
 
-	int64_t count = 0;
-	while(1){
-		std::string item;
-		int ret = serv->ssdb->qpop_front(req[1], &item);
-		if(ret == 0){
-			break;
-		}
-		if(ret == -1){
-			return -1;
-		}
-		count += 1;
-	}
+	const Bytes &name = req[1];
+	int64_t count = serv->ssdb->qclear(name);	
 	resp->reply_int(0, count);
 	return 0;
 }

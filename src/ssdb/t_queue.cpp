@@ -86,6 +86,24 @@ int64_t SSDBImpl::qsize(const Bytes &name){
 	}
 }
 
+/****************/
+
+int64_t SSDBImpl::qclear(const Bytes &name){
+	int64_t count = 0;
+	while(1){
+		std::string item;
+		int ret = this->qpop_front(name, &item);
+		if(ret == 0){
+			break;
+		}
+		if(ret == -1){
+			return -1;
+		}
+		count += 1;
+	}
+	return count;
+}
+
 // @return 0: empty queue, 1: item peeked, -1: error
 int SSDBImpl::qfront(const Bytes &name, std::string *item){
 	int ret = 0;

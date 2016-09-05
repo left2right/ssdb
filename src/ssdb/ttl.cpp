@@ -12,9 +12,10 @@ found in the LICENSE file.
 #define EXPIRATION_LIST_KEY "\xff\xff\xff\xff\xff|EXPIRE_LIST|KV"
 #define BATCH_SIZE    1000
 
-ExpirationHandler::ExpirationHandler(SSDB *ssdb, SSDB *meta){
+ExpirationHandler::ExpirationHandler(SSDB *ssdb, SSDB *meta, std::string ttl_type){
 	this->ssdb = ssdb;
 	this->meta = meta;
+	this->ttl_type = ttl_type;
 	this->thread_quit = false;
 	this->list_name = EXPIRATION_LIST_KEY;
 	this->first_timeout = 0;
@@ -138,9 +139,11 @@ void ExpirationHandler::expire_loop(){
 		if(score <= time_ms()){
 			log_debug("expired %s", key.c_str());
 			ssdb->del(key);
-			//ssdb->hclear(key);
-			//ssdb->qclear(key);
-			//ssdb->zclear(key);
+			if (ttl_type=="all"){
+				ssdb->hclear(key);
+				ssdb->qclear(key);
+				ssdb->zclear(key);
+			}
 			meta->zdel(this->list_name, key);
 			this->fast_keys.pop_front();
 		}

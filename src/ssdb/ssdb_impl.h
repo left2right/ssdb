@@ -103,6 +103,7 @@ public:
 	//int multi_zdel(const Bytes &name, const std::vector<Bytes> &keys, int offset=0, char log_type=BinlogType::SYNC);
 	
 	virtual int64_t zsize(const Bytes &name);
+	virtual int64_t zclear(const Bytes &name);
 	/**
 	 * @return -1: error; 0: not found; 1: found
 	 */
@@ -126,6 +127,7 @@ public:
 	virtual int64_t zfix(const Bytes &name);
 	
 	virtual int64_t qsize(const Bytes &name);
+	virtual int64_t qclear(const Bytes &name);
 	// @return 0: empty queue, 1: item peeked, -1: error
 	virtual int qfront(const Bytes &name, std::string *item);
 	// @return 0: empty queue, 1: item peeked, -1: error

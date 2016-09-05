@@ -106,6 +106,32 @@ int64_t SSDBImpl::zsize(const Bytes &name){
 	}
 }
 
+int64_t SSDBImpl::zclear(const Bytes &name){
+	int64_t count = 0;
+	std::string key_start, score_start;
+	while(1){
+		ZIterator *it = this->zscan(name, key_start, score_start, "", 1000);
+		int num = 0;
+		while(it->next()){
+			key_start = it->key;
+			score_start = it->score;
+			int ret = this->zdel(name, key_start);
+			if(ret == -1){
+				delete it;
+				return 0;
+			}
+			num ++;
+		};
+		delete it;
+		
+		if(num == 0){
+			break;
+		}
+		count += num;
+	}
+	return count;
+}
+
 int SSDBImpl::zget(const Bytes &name, const Bytes &key, std::string *score){
 	std::string buf = encode_zset_key(name, key);
 	leveldb::Status s = ldb->Get(leveldb::ReadOptions(), buf, score);

@@ -83,6 +83,7 @@ public:
 	virtual int zincr(const Bytes &name, const Bytes &key, int64_t by, int64_t *new_val, char log_type=BinlogType::SYNC) = 0;
 	
 	virtual int64_t zsize(const Bytes &name) = 0;
+	virtual int64_t zclear(const Bytes &name) = 0;
 	/**
 	 * @return -1: error; 0: not found; 1: found
 	 */
@@ -106,6 +107,7 @@ public:
 	virtual int64_t zfix(const Bytes &name) = 0;
 	
 	virtual int64_t qsize(const Bytes &name) = 0;
+	virtual int64_t qclear(const Bytes &name) = 0;
 	// @return 0: empty queue, 1: item peeked, -1: error
 	virtual int qfront(const Bytes &name, std::string *item) = 0;
 	// @return 0: empty queue, 1: item peeked, -1: error
