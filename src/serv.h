@@ -33,6 +33,7 @@ public:
 	BackendDump *backend_dump;
 	BackendSync *backend_sync;
 	ExpirationHandler *expiration;
+	SlotsManager *slots_manager;
 	std::vector<Slave *> slaves;
 	Cluster *cluster;
 

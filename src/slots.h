@@ -14,6 +14,7 @@ found in the LICENSE file.
 #include "util/bytes.h"
 #include "ssdb/const.h"
 #include "ssdb/ssdb.h"
+#include "ssdb/ttl.h"
 #include "net/link.h"
 #include <string>
 #include <vector>
@@ -107,12 +108,13 @@ class SSDB;
 class SlotsManager
 {
 public:
-	SlotsManager(SSDB *db, SSDB *meta);
+	SlotsManager(SSDB *db, SSDB *meta, ExpirationHandler *expiration);
 	~SlotsManager();
 	SlotsManager(const SlotsManager &manager);
 
 	//Slot List api
 	int init_slots_list();
+	int clear_slots_list();
 	int get_slot(int id, Slot *slot);
 	Slot* get_slot_ref(int id);
 	int get_slot_list(std::vector<Slot> *ids_list);
@@ -133,6 +135,7 @@ public:
 private:
 	SSDB *db;
 	SSDB *meta;
+	ExpirationHandler *expiration;
 	SlotKeyRange load_slot_range(int id);
 	std::string get_range_begin(int id, const char tyep);
 	std::string get_range_end(int id, const char tyep);
@@ -158,15 +161,5 @@ private:
 	};
 	static void* _run_slotsmgrtslot(void *arg);
 };
-
-
-
-
-
-
-
-
-
-
 
 #endif

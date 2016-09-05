@@ -48,12 +48,9 @@ int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response 
 	CHECK_NUM_PARAMS(1);
 	SSDBServer *serv = (SSDBServer *)net->data;
 
-	log_info("slotsinfo get slots in this ssdb");
-
-	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
+	SlotsManager *manager = serv->slots_manager;
 	std::string info;
 	int ret = manager->slotsinfo(info);
-	delete(manager);
 	if (ret != 0){
 		resp->push_back("error");
 		return -1;
@@ -61,6 +58,7 @@ int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response 
 
 	resp->push_back("ok");
 	resp->push_back(info);
+	log_info("slotsinfo get slots info %s in this ssdb", info.c_str());
 	return 0;
 }
 
@@ -77,26 +75,25 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 	int timeout = req[3].Int();
 	int slot_id = req[4].Int();
 
-	log_info("slotsmgrtslot migrate slot %d to %s:%d", slot_id, addr.c_str(), port);
+	//log_info("slotsmgrtslot migrate slot %d to %s:%d", slot_id, addr.c_str(), port);
 
 	std::string val;
-	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
+	SlotsManager *manager = serv->slots_manager;
 	int ret = manager->slot_status(slot_id);
 
 	int ret2;
 	switch(ret){
 	case 0: 
-		log_info("slotsmgrtslot migrate slot %d to %s:%d, but slot is empty", slot_id, addr.c_str(), port);
 		resp->push_back("ok");
 		resp->push_back("0");
 		resp->push_back("0");
+		log_info("slotsmgrtslot migrate slot %d to %s:%d, but slot is empty, status 0", slot_id, addr.c_str(), port);
 		break;
 	case -1:
-		log_error("slotsmgrtslot migrate slot %d to %s:%d exception", slot_id, addr.c_str(), port);
 		resp->push_back("error");
+		log_error("slotsmgrtslot migrate slot %d to %s:%d exception, status -1", slot_id, addr.c_str(), port);
 		break;
 	case 1:
-		log_info("slotsmgrtslot migrate slot %d to %s:%d begin!", slot_id, addr.c_str(), port);
 		ret2 = manager->slotsmgrtslot(addr, port, timeout, slot_id);
 		if (ret2 == -1){
 			resp->push_back("error");
@@ -105,15 +102,15 @@ int proc_slotsmgrtslot(NetworkServer *net, Link *link, const Request &req, Respo
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
+		log_info("slotsmgrtslot migrate slot %d to %s:%d, begin, status 1", slot_id, addr.c_str(), port);
 		break;
 	case 2:
-		log_info("slotsmgrtslot migrate slot %d to %s:%d running!", slot_id, addr.c_str(), port);
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
+		log_info("slotsmgrtslot migrate slot %d to %s:%d running, status 2!", slot_id, addr.c_str(), port);
 		break;	
 	}
-	delete(manager);
 	return 0;
 }
 
@@ -127,9 +124,8 @@ int proc_slotsmgrtone(NetworkServer *net, Link *link, const Request &req, Respon
 	std::string name = req[4].String();
 	log_info("slotsmgrtone migrate  %s to %s:%d begin", name.c_str(), addr.c_str(), port);
 
-	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
+	SlotsManager *manager = serv->slots_manager;
 	int ret = manager->slotsmgrtone(addr, port, timeout, name);
-	delete(manager);
 
 	resp->push_back("ok");
 	if (ret==1)
@@ -149,9 +145,8 @@ int proc_slotsmgrtstop(NetworkServer *net, Link *link, const Request &req, Respo
 
 	log_info("slotsmgrtstop stop migrating, just hclear SLOTS_HASH meta key, more work to do");
 	SSDBServer *serv = (SSDBServer *)net->data;
-	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
+	SlotsManager *manager = serv->slots_manager;
 	int ret = manager->slotsmgrtstop();
-	delete(manager);
 
 	resp->push_back("ok");
 	if (ret==1)
@@ -173,26 +168,25 @@ int proc_slotsmgrttagslot(NetworkServer *net, Link *link, const Request &req, Re
 	int timeout = req[3].Int();
 	int slot_id = req[4].Int();
 
-	log_info("slotsmgrtslot migrate slot %d to %s:%d", slot_id, addr.c_str(), port);
+	//log_info("slotsmgrtslot migrate slot %d to %s:%d", slot_id, addr.c_str(), port);
 
 	std::string val;
-	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
+	SlotsManager *manager = serv->slots_manager;
 	int ret = manager->slot_status(slot_id);
 
 	int ret2;
 	switch(ret){
 	case 0: 
-		log_info("slotsmgrtslot migrate slot %d to %s:%d, but slot is empty", slot_id, addr.c_str(), port);
 		resp->push_back("ok");
 		resp->push_back("0");
 		resp->push_back("0");
+		log_info("slotsmgrtslot migrate slot %d to %s:%d, but slot is empty, status 0", slot_id, addr.c_str(), port);		
 		break;
 	case -1:
-		log_error("slotsmgrtslot migrate slot %d to %s:%d exception", slot_id, addr.c_str(), port);
 		resp->push_back("error");
+		log_error("slotsmgrtslot migrate slot %d to %s:%d exception, status -1", slot_id, addr.c_str(), port);
 		break;
 	case 1:
-		log_info("slotsmgrtslot migrate slot %d to %s:%d begin!", slot_id, addr.c_str(), port);
 		ret2 = manager->slotsmgrtslot(addr, port, timeout, slot_id);
 		if (ret2 == -1){
 			resp->push_back("error");
@@ -201,15 +195,15 @@ int proc_slotsmgrttagslot(NetworkServer *net, Link *link, const Request &req, Re
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
+		log_info("slotsmgrtslot migrate slot %d to %s:%d, begin ,status 1", slot_id, addr.c_str(), port);
 		break;
 	case 2:
-		log_info("slotsmgrtslot migrate slot %d to %s:%d running!", slot_id, addr.c_str(), port);
 		resp->push_back("ok");
 		resp->push_back("1");
 		resp->push_back("1");
+		log_info("slotsmgrtslot migrate slot %d to %s:%d running, status 2", slot_id, addr.c_str(), port);
 		break;	
 	}
-	delete(manager);
 	return 0;
 }
 
@@ -223,9 +217,8 @@ int proc_slotsmgrttagone(NetworkServer *net, Link *link, const Request &req, Res
 	std::string name = req[4].String();
 	log_info("slotsmgrtone migrate  %s to %s:%d begin", name.c_str(), addr.c_str(), port);
 
-	SlotsManager *manager = new SlotsManager(serv->ssdb, serv->meta);
+	SlotsManager *manager = serv->slots_manager;
 	int ret = manager->slotsmgrtone(addr, port, timeout, name);
-	delete(manager);
 
 	resp->push_back("ok");
 	if (ret==1)
@@ -243,9 +236,3 @@ int proc_slotsmgrttagone(NetworkServer *net, Link *link, const Request &req, Res
 int proc_slotsrestore(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	return 0;
 }
-
-
-
-
-
-

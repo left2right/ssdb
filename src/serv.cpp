@@ -296,7 +296,8 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 
 	backend_dump = new BackendDump(this->ssdb);
 	backend_sync = new BackendSync(this->ssdb, sync_speed);
-	expiration = new ExpirationHandler(this->ssdb);
+	expiration = new ExpirationHandler(this->ssdb, this->meta);
+	slots_manager = new SlotsManager(this->ssdb, this->meta, this->expiration);
 	
 	cluster = new Cluster(this->ssdb);
 	if(cluster->init() == -1){
@@ -366,6 +367,7 @@ SSDBServer::~SSDBServer(){
 
 	delete backend_dump;
 	delete backend_sync;
+	delete slots_manager;
 	delete expiration;
 	delete cluster;
 
@@ -430,6 +432,7 @@ int proc_flushdb(NetworkServer *net, Link *link, const Request &req, Response *r
 		return 0;
 	}
 	serv->ssdb->flushdb();
+	serv->meta->flushdb();
 	resp->push_back("ok");
 	return 0;
 }
