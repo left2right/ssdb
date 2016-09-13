@@ -367,7 +367,8 @@ int Slave::proc_sync(const Binlog &log, const std::vector<Bytes> &req){
 					break;
 				}
 				std::string key;
-				if(decode_kv_key(log.key(), &key) == -1){
+				uint16_t slot;
+				if(decode_kv_key(log.key(), &key, &slot) == -1){
 					break;
 				}
 				log_trace("set %s", hexmem(key.data(), key.size()).c_str());
@@ -379,7 +380,8 @@ int Slave::proc_sync(const Binlog &log, const std::vector<Bytes> &req){
 		case BinlogCommand::KDEL:
 			{
 				std::string key;
-				if(decode_kv_key(log.key(), &key) == -1){
+				uint16_t slot;
+				if(decode_kv_key(log.key(), &key, &slot) == -1){
 					break;
 				}
 				log_trace("del %s", hexmem(key.data(), key.size()).c_str());

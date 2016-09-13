@@ -12,8 +12,10 @@ found in the LICENSE file.
 #define EXPIRATION_LIST_KEY "\xff\xff\xff\xff\xff|EXPIRE_LIST|KV"
 #define BATCH_SIZE    1000
 
-ExpirationHandler::ExpirationHandler(SSDB *ssdb){
+ExpirationHandler::ExpirationHandler(SSDB *ssdb, SSDB *meta, std::string ttl_type){
 	this->ssdb = ssdb;
+	this->meta = meta;
+	this->ttl_type = ttl_type;
 	this->thread_quit = false;
 	this->list_name = EXPIRATION_LIST_KEY;
 	this->first_timeout = 0;
@@ -24,6 +26,7 @@ ExpirationHandler::~ExpirationHandler(){
 	Locking l(&this->mutex);
 	this->stop();
 	ssdb = NULL;
+	meta = NULL;
 }
 
 void ExpirationHandler::start(){
@@ -55,7 +58,7 @@ int ExpirationHandler::set_ttl(const Bytes &key, int64_t ttl){
 		return -1;
 	}
 
-	int ret = ssdb->zset(this->list_name, key, Bytes(data, size));
+	int ret = meta->zset(this->list_name, key, Bytes(data, size));
 	if(ret == -1){
 		return -1;
 	}
@@ -82,14 +85,14 @@ int ExpirationHandler::del_ttl(const Bytes &key){
 	// if(!this->fast_keys.empty()){
 	if(first_timeout != INT64_MAX){
 		fast_keys.del(key.String());
-		ssdb->zdel(this->list_name, key);
+		meta->zdel(this->list_name, key);
 	}
 	return 0;
 }
 
 int64_t ExpirationHandler::get_ttl(const Bytes &key){
 	std::string score;
-	if(ssdb->zget(this->list_name, key, &score) == 1){
+	if(meta->zget(this->list_name, key, &score) == 1){
 		int64_t ex = str_to_int64(score);
 		return (ex - time_ms())/1000;
 	}
@@ -98,7 +101,7 @@ int64_t ExpirationHandler::get_ttl(const Bytes &key){
 
 void ExpirationHandler::load_expiration_keys_from_db(int num){
 	ZIterator *it;
-	it = ssdb->zscan(this->list_name, "", "", "", num);
+	it = meta->zscan(this->list_name, "", "", "", num);
 	int n = 0;
 	while(it->next()){
 		n ++;
@@ -116,7 +119,7 @@ void ExpirationHandler::load_expiration_keys_from_db(int num){
 
 void ExpirationHandler::expire_loop(){
 	Locking l(&this->mutex);
-	if(!this->ssdb){
+	if((!this->ssdb) && (!this->meta)){
 		return;
 	}
 
@@ -136,7 +139,12 @@ void ExpirationHandler::expire_loop(){
 		if(score <= time_ms()){
 			log_debug("expired %s", key.c_str());
 			ssdb->del(key);
-			ssdb->zdel(this->list_name, key);
+			if (ttl_type=="all"){
+				ssdb->hclear(key);
+				ssdb->qclear(key);
+				ssdb->zclear(key);
+			}
+			meta->zdel(this->list_name, key);
 			this->fast_keys.pop_front();
 		}
 	}
