@@ -123,7 +123,7 @@ public:
 	int del_slot(int id);
 
 	//codis slot api 
-	int slotsinfo(std::string &val);
+	int slotsinfo(std::vector<int> *ids_list, int start=0, int count=HASH_SLOTS_SIZE);
 	int slotsmgrtslot(std::string addr, int port, int timeout, int slot);
 	int slotsmgrtstop();
 	int slotsmgrtone(std::string addr, int port, int timeout, std::string name);

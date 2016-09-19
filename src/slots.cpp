@@ -107,11 +107,27 @@ int SlotsManager::del_slot(int id){
 	return 0;
 }
 
-int SlotsManager::slotsinfo(std::string &val){
+int SlotsManager::slotsinfo(std::vector<int> *ids_list, int start, int count){
+	if (count == 1){
+		int ret = this->slot_status(start);
+		ids_list->push_back(start);
+		ids_list->push_back(ret);
+		return 0;
+	}
+
 	init_slots_list();
+	std::vector<int> tmp_ids;
 	for(std::vector<Slot>::iterator it=slots_list.begin(); it!=slots_list.end(); it++){
-		val.append("\n");
-		val.append(str(it->id));
+		tmp_ids.push_back(it->id);
+	}
+	std::sort(tmp_ids.begin(), tmp_ids.end());
+	int temp_count = 0;
+	for(std::vector<int>::iterator it=tmp_ids.begin(); (it!=tmp_ids.end())&&(temp_count <count); it++){
+		if (*it >= start){
+			ids_list->push_back(*it);
+			ids_list->push_back(1);
+		}	
+		temp_count++;
 	}
 	return 0;
 }
@@ -141,7 +157,7 @@ int SlotsManager::slot_status(int slot_id){
 	log_info("get slot %d status", slot_id);
 	std::string status;
 	int ret = meta->hget(slots_hash_key, str(slot_id), &status);
-	if (ret==1){
+	if (ret >= 1){
 		return Bytes(status).Int();
 	}else {
 		return slot_init(slot_id);
