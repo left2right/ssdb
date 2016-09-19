@@ -49,16 +49,31 @@ int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response 
 	SSDBServer *serv = (SSDBServer *)net->data;
 
 	SlotsManager *manager = serv->slots_manager;
-	std::string info;
-	int ret = manager->slotsinfo(info);
-	if (ret != 0){
-		resp->push_back("error");
-		return -1;
+	std::vector<int> slots_list;
+	if (req[1].String().empty()){
+		int ret = manager->slotsinfo(&slots_list);
+		if (ret != 0){
+			resp->push_back("error");
+			return -1;
+		}
+	}else if (req[2].String().empty()){
+		int ret = manager->slotsinfo(&slots_list, req[1].Int());
+		if (ret != 0){
+			resp->push_back("error");
+			return -1;
+		}
+	}else {
+		int ret = manager->slotsinfo(&slots_list, req[1].Int(), req[2].Int());
+		if (ret != 0){
+			resp->push_back("error");
+			return -1;
+		}
 	}
-
+	
 	resp->push_back("ok");
-	resp->push_back(info);
-	log_info("slotsinfo get slots info %s in this ssdb", info.c_str());
+	for(std::vector<int>::iterator it=slots_list.begin(); it!=slots_list.end(); it++){
+		resp->add(*it);
+	}
 	return 0;
 }
 
