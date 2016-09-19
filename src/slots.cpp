@@ -123,8 +123,10 @@ int SlotsManager::slotsinfo(std::vector<int> *ids_list, int start, int count){
 	std::sort(tmp_ids.begin(), tmp_ids.end());
 	int temp_count = 0;
 	for(std::vector<int>::iterator it=tmp_ids.begin(); (it!=tmp_ids.end())&&(temp_count <count); it++){
-		ids_list->push_back(*it);
-		ids_list->push_back(1);
+		if (*it >= start){
+			ids_list->push_back(*it);
+			ids_list->push_back(1);
+		}	
 		temp_count++;
 	}
 	return 0;

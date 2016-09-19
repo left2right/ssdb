@@ -50,20 +50,23 @@ int proc_slotsinfo(NetworkServer *net, Link *link, const Request &req, Response 
 
 	SlotsManager *manager = serv->slots_manager;
 	std::vector<int> slots_list;
-	if (req[1].String().empty()){
-		int ret = manager->slotsinfo(&slots_list);
+	if (req.size() == 3){
+		log_info("slotsinfo request 3, %s %d, %d", req[0].String().c_str(), req[1].Int(), req[2].Int());
+		int ret = manager->slotsinfo(&slots_list, req[1].Int(), req[2].Int());
 		if (ret != 0){
 			resp->push_back("error");
 			return -1;
 		}
-	}else if (req[2].String().empty()){
+	}else if (req.size() == 2){
+		log_info("slotsinfo request 2, %s %d", req[0].String().c_str(), req[1].Int());
 		int ret = manager->slotsinfo(&slots_list, req[1].Int());
 		if (ret != 0){
 			resp->push_back("error");
 			return -1;
 		}
 	}else {
-		int ret = manager->slotsinfo(&slots_list, req[1].Int(), req[2].Int());
+		log_info("slotsinfo request 1, %s", req[0].String().c_str());
+		int ret = manager->slotsinfo(&slots_list);
 		if (ret != 0){
 			resp->push_back("error");
 			return -1;
