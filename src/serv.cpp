@@ -299,7 +299,7 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 
 	backend_dump = new BackendDump(this->ssdb);
 	backend_sync = new BackendSync(this->ssdb, sync_speed);
-	expiration = new ExpirationHandler(this->ssdb, this->meta, ttl_type);
+	expiration = new ExpirationHandler(this->ssdb, ttl_type);
 	slots_manager = new SlotsManager(this->ssdb, this->meta, this->expiration);
 	
 	cluster = new Cluster(this->ssdb);

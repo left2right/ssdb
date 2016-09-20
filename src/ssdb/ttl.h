@@ -16,7 +16,7 @@ class ExpirationHandler
 public:
 	Mutex mutex;
 
-	ExpirationHandler(SSDB *ssdb, SSDB *meta, std::string ttl_type="kv");
+	ExpirationHandler(SSDB *ssdb, std::string ttl_type="kv");
 	~ExpirationHandler();
 
 	// "In Redis 2.6 or older the command returns -1 if the key does not exist
@@ -29,7 +29,6 @@ public:
 
 private:
 	SSDB *ssdb;
-	SSDB *meta;
 	std::string ttl_type;
 	volatile bool thread_quit;
 	std::string list_name;
