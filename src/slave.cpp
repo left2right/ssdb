@@ -35,6 +35,8 @@ Slave::Slave(SSDB *ssdb, SSDB *meta, const char *ip, int port, bool is_mirror){
 	
 	this->copy_count = 0;
 	this->sync_count = 0;
+
+	this->decoder = "slot";
 }
 
 Slave::~Slave(){
@@ -367,9 +369,15 @@ int Slave::proc_sync(const Binlog &log, const std::vector<Bytes> &req){
 					break;
 				}
 				std::string key;
-				uint16_t slot;
-				if(decode_kv_key(log.key(), &key, &slot) == -1){
-					break;
+				if (this->decoder == "ssdb"){
+					if(decode_kv_key(log.key(), &key) == -1){
+						break;
+					}
+				}else {
+					uint16_t slot;
+					if(decode_kv_key(log.key(), &key, &slot) == -1){
+						break;
+					}
 				}
 				log_trace("set %s", hexmem(key.data(), key.size()).c_str());
 				if(ssdb->set(key, req[1], log_type) == -1){
@@ -380,9 +388,15 @@ int Slave::proc_sync(const Binlog &log, const std::vector<Bytes> &req){
 		case BinlogCommand::KDEL:
 			{
 				std::string key;
-				uint16_t slot;
-				if(decode_kv_key(log.key(), &key, &slot) == -1){
-					break;
+				if (this->decoder == "ssdb"){
+					if(decode_kv_key(log.key(), &key) == -1){
+						break;
+					}
+				}else {
+					uint16_t slot;
+					if(decode_kv_key(log.key(), &key, &slot) == -1){
+						break;
+					}
 				}
 				log_trace("del %s", hexmem(key.data(), key.size()).c_str());
 				if(ssdb->del(key, log_type) == -1){

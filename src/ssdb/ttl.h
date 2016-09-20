@@ -11,12 +11,17 @@ found in the LICENSE file.
 #include "../util/sorted_set.h"
 #include <string>
 
+//#define EXPIRATION_LIST_KEY "\xff\xff\xff\xff\xff|EXPIRE_LIST|KV"
+// change this key for rev_iterator find it
+#define EXPIRATION_LIST_KEY "EXPIRE_LIST|KV|\xff\xff\xff\xff\xff"
+#define BATCH_SIZE    1000
+
 class ExpirationHandler
 {
 public:
 	Mutex mutex;
 
-	ExpirationHandler(SSDB *ssdb, SSDB *meta, std::string ttl_type="kv");
+	ExpirationHandler(SSDB *ssdb, std::string ttl_type="kv");
 	~ExpirationHandler();
 
 	// "In Redis 2.6 or older the command returns -1 if the key does not exist
@@ -29,7 +34,6 @@ public:
 
 private:
 	SSDB *ssdb;
-	SSDB *meta;
 	std::string ttl_type;
 	volatile bool thread_quit;
 	std::string list_name;

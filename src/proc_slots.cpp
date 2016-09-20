@@ -29,6 +29,36 @@ int proc_slaveof(NetworkServer *net, Link *link, const Request &req, Response *r
 
 	resp->push_back("ok");
 	return 0;
+}
+
+int proc_slavedecoder(NetworkServer *net, Link *link, const Request &req, Response *resp){
+	SSDBServer *serv = (SSDBServer *)net->data;
+	CHECK_NUM_PARAMS(1);
+
+	std::string decoder;
+	if (req.size() >= 3 && req[1].String() == "set"){
+		decoder = req[2].String();
+		strtolower(&decoder);	
+		if (decoder == "ssdb" || decoder == "slot"){
+			for (std::vector<Slave *>::iterator it= (serv->slaves).begin(); it != (serv->slaves).end(); it++){
+				(*it)->decoder = decoder;
+			}
+			log_info("set slave decoder %s", decoder.c_str());
+			resp->push_back("ok");
+			resp->push_back(decoder);
+			return 0;
+		}else{
+			log_error("slave_decoder wrong type %s", decoder.c_str());
+			resp->push_back("error");
+			return -1;
+		}
+	}
+
+	resp->push_back("ok");
+	decoder = serv->slaves.front()->decoder;
+	resp->push_back(decoder);
+	
+	return 0;
 } 
 
 int proc_slotshashkey(NetworkServer *net, Link *link, const Request &req, Response *resp){

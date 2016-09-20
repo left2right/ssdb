@@ -133,6 +133,7 @@ DEF_PROC(cluster_migrate_kv_data);
 //added for supporting codis
 DEF_PROC(config);
 DEF_PROC(slaveof);
+DEF_PROC(slavedecoder);
 DEF_PROC(slotshashkey);
 DEF_PROC(slotsinfo);
 DEF_PROC(slotsdel);
@@ -274,6 +275,7 @@ void SSDBServer::reg_procs(NetworkServer *net){
 	//added for supporting codis
 	REG_PROC(config, "rt");
 	REG_PROC(slaveof, "rt");
+	REG_PROC(slavedecoder, "wt");
 	REG_PROC(slotshashkey, "rt");
 	REG_PROC(slotsinfo, "rt");
     REG_PROC(slotsdel, "wt");
@@ -297,7 +299,7 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 
 	backend_dump = new BackendDump(this->ssdb);
 	backend_sync = new BackendSync(this->ssdb, sync_speed);
-	expiration = new ExpirationHandler(this->ssdb, this->meta, ttl_type);
+	expiration = new ExpirationHandler(this->ssdb, ttl_type);
 	slots_manager = new SlotsManager(this->ssdb, this->meta, this->expiration);
 	
 	cluster = new Cluster(this->ssdb);
@@ -340,6 +342,10 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 					slave->set_id(id);
 				}
 				slave->auth = c->get_str("auth");
+				std::string slave_decoder = conf.get_str("server.slave_decoder");
+				strtolower(&slave_decoder);
+				log_debug("set slave decoder %s", slave_decoder.c_str());
+				slave->decoder = slave_decoder;
 				slave->start();
 				slaves.push_back(slave);
 			}
