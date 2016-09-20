@@ -11,6 +11,11 @@ found in the LICENSE file.
 #include "../util/sorted_set.h"
 #include <string>
 
+//#define EXPIRATION_LIST_KEY "\xff\xff\xff\xff\xff|EXPIRE_LIST|KV"
+// change this key for rev_iterator find it
+#define EXPIRATION_LIST_KEY "EXPIRE_LIST|KV|\xff\xff\xff\xff\xff"
+#define BATCH_SIZE    1000
+
 class ExpirationHandler
 {
 public:

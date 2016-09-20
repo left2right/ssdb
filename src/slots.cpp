@@ -132,27 +132,6 @@ int SlotsManager::slotsinfo(std::vector<int> *ids_list, int start, int count){
 	return 0;
 }
 
-/*
-std::string SlotsManager::slotsinfo(){
-	Iterator *it;
-	it = db->iterator("", "", 100000);
-	std::string val="";
-	while(it->next()){
-		Bytes ks = it->key();
-		if(ks.data()[0] == DataType::KV){
-			std::string tmpstr;
-			uint16_t tmpslot;
-			decode_kv_key(ks, &tmpstr, &tmpslot);
-			log_debug("iterator database key %s and slot %d", tmpstr.c_str(), tmpslot);
-		}else {
-			log_debug("iterator database type %c", ks.data()[0]);
-		}
-	}
-	return val;
-}
-*/
-
-
 int SlotsManager::slot_status(int slot_id){
 	log_info("get slot %d status", slot_id);
 	std::string status;
@@ -265,6 +244,12 @@ void* SlotsManager::_run_slotsmgrtslot(void *arg){
 						manager->set_slot_meta_status(slot_id, SlotStatus::NORMAL);
 						return (void *)NULL;
 					}
+
+					//do not migrate expiration key EXPIRATION_LIST_KEY
+					if (name == EXPIRATION_LIST_KEY){
+						break;
+					}
+
 					if(slot == slot_id){
 						manager->slotsmgrtslot_zset(addr, port, timeout, name);
 					}else{
@@ -504,7 +489,7 @@ std::string SlotsManager::get_range_end(int id, const char type){
 		if(ks.data()[0] == type){
 			std::string n;
 			uint16_t slot;
-			switch(type){
+			switch(type){	
 			case DataType::KV:
 				if(decode_kv_key(ks, &n, &slot) == -1){
 					return "";

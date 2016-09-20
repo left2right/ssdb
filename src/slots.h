@@ -73,10 +73,11 @@ public:
 		return queue_begin == "" && queue_end == "";
 	}
 	bool zset_empty() const{
-		return zset_begin == "" && zset_end == "";
+		//exipration key should not be migrated
+		return (zset_begin == "" && zset_end == "") || (zset_begin == EXPIRATION_LIST_KEY && zset_end == EXPIRATION_LIST_KEY);
 	}
 	bool empty() const{
-		return kv_begin == "" && kv_end == "" && hash_begin == "" && hash_end == "" && queue_begin == "" && queue_end == "" && zset_begin == "" && zset_end == "";
+		return kv_empty() && hash_empty() && queue_empty() && zset_empty();
 	}
 	std::string str() const{
 		std::string buf;
