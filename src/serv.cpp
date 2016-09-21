@@ -133,7 +133,13 @@ DEF_PROC(cluster_migrate_kv_data);
 //added for codis
 DEF_PROC(config);
 DEF_PROC(slaveof);
-
+DEF_PROC(slotshashkey);
+DEF_PROC(slotsinfo);
+DEF_PROC(slotsmgrtslot);
+DEF_PROC(slotsmgrtone);
+DEF_PROC(slotsmgrttagslot);
+DEF_PROC(slotsmgrttagone);
+DEF_PROC(slotsmgrtstop);
 
 #define REG_PROC(c, f)     net->proc_map.set_proc(#c, f, proc_##c)
 
@@ -265,7 +271,13 @@ void SSDBServer::reg_procs(NetworkServer *net){
 	//added for codis
 	REG_PROC(config, "rt");
 	REG_PROC(slaveof, "rt");
-
+	REG_PROC(slotshashkey, "rt");
+	REG_PROC(slotsinfo, "rt");
+    REG_PROC(slotsmgrtslot, "wt");
+    REG_PROC(slotsmgrtone, "wt");
+    REG_PROC(slotsmgrttagslot, "wt");
+    REG_PROC(slotsmgrttagone, "wt");
+    REG_PROC(slotsmgrtstop, "wt");    
 }
 
 

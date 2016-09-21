@@ -18,6 +18,10 @@ Description: ssdb slots manager
 #include "ssdb/ttl.h"
 #include "net/link.h"
 
+namespace ssdb{
+	class Client;
+};
+
 inline static
 std::string slot_guard(const char type, uint16_t id, const char *key){
 	std::string guard;
@@ -27,6 +31,12 @@ std::string slot_guard(const char type, uint16_t id, const char *key){
 	guard.append(key, 1);
 	return guard;
 }
+
+class SlotStatus{
+public:
+	static const int NORMAL			= 1;
+	static const int MIGRATING		= 2;
+};
 
 class SlotKeyRange{
 public:
@@ -52,7 +62,7 @@ public:
 	}
 	bool zset_empty() const{
 		//exipration key should not be migrated
-		return zset_begin == "" && zset_end == "";
+		return (zset_begin == "" && zset_end == "") || (zset_begin == EXPIRATION_LIST_KEY && zset_end == EXPIRATION_LIST_KEY);
 	}
 	bool empty() const{
 		return kv_empty() && hash_empty() && queue_empty() && zset_empty();
@@ -82,21 +92,48 @@ public:
 	SlotsManager(SSDB *db, SSDB *meta, ExpirationHandler *expiration);
 	~SlotsManager();
 
-	//Slot List api
+	//Slot api
 	int init_slots_list();
 	int clear_slots_list();
 	int add_slot(int id, SlotKeyRange range);
+	int slot_status(int slot_id);
+	int slot_init(int slot_id);
+
+	//codis slot api 
+	int slotsinfo(std::vector<int> *ids_list, int start=0, int count=HASH_SLOTS_SIZE);
+	int slotsmgrtslot(std::string addr, int port, int timeout, int slot);
+	int slotsmgrtone(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtstop();
 
 private:
 	SSDB *db;
 	SSDB *meta;
 	ExpirationHandler *expiration;
+
 	SlotKeyRange load_slot_range(int id);
 	std::string get_range_begin(int id, const char tyep);
 	std::string get_range_end(int id, const char tyep);
 
+	int set_slot_meta_status(int slot_id, const int status);
+	int del_slot_meta_status(int slot_id);	
+
+	int slotsmgrtslot_kv(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_hash(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_queue(std::string addr, int port, int timeout, std::string name);
+	int slotsmgrtslot_zset(std::string addr, int port, int timeout, std::string name);
+
 	std::vector<Slot> slots_list;
 	std::string slots_hash_key;
+	Mutex mutex;
+
+	struct run_arg{
+		std::string addr;
+		int port;
+		int timeout;
+		int slot_id;
+		const SlotsManager *manager;
+	};
+	static void* _run_slotsmgrtslot(void *arg);	
 };
 
 #endif
