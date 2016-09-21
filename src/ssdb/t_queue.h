@@ -18,16 +18,22 @@ inline static
 std::string encode_qsize_key(const Bytes &name){
 	std::string buf;
 	buf.append(1, DataType::QSIZE);
+	uint16_t slot = big_endian(name.slots());
+	buf.append((char *)&slot, sizeof(uint16_t));
 	buf.append(name.data(), name.size());
 	return buf;
 }
 
 inline static
-int decode_qsize_key(const Bytes &slice, std::string *name){
+int decode_qsize_key(const Bytes &slice, std::string *name, uint16_t *slot){
 	Decoder decoder(slice.data(), slice.size());
 	if(decoder.skip(1) == -1){
 		return -1;
 	}
+	if(decoder.read_uint16(slot) == -1){
+		return -1;
+	}
+	*slot = big_endian(*slot);
 	if(decoder.read_data(name) == -1){
 		return -1;
 	}

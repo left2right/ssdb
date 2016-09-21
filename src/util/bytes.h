@@ -245,6 +245,17 @@ public:
 		size -= n;
 		return n;
 	}
+	int read_uint16(uint16_t *ret){
+		if(size_t(size) < sizeof(uint16_t)){
+			return -1;
+		}
+		if(ret){
+			*ret = *(uint16_t *)p;
+		}
+		p += sizeof(uint16_t);
+		size -= sizeof(uint16_t);
+		return sizeof(uint16_t);
+	}
 	int read_int64(int64_t *ret){
 		if(size_t(size) < sizeof(int64_t)){
 			return -1;

@@ -244,7 +244,8 @@ static void get_znames(Iterator *it, std::vector<std::string> *list){
 			break;
 		}
 		std::string n;
-		if(decode_zsize_key(ks, &n) == -1){
+		uint16_t slot;
+		if(decode_zsize_key(ks, &n, &slot) == -1){
 			continue;
 		}
 		list->push_back(n);

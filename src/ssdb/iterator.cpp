@@ -106,7 +106,8 @@ bool KIterator::next(){
 		if(ks.data()[0] != DataType::KV){
 			return false;
 		}
-		if(decode_kv_key(ks, &this->key) == -1){
+		uint16_t slot;
+		if(decode_kv_key(ks, &this->key, &slot) == -1){
 			continue;
 		}
 		if(return_val_){
