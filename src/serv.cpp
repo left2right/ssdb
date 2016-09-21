@@ -281,6 +281,7 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 	backend_dump = new BackendDump(this->ssdb);
 	backend_sync = new BackendSync(this->ssdb, sync_speed);
 	expiration = new ExpirationHandler(this->ssdb);
+	slots_manager = new SlotsManager(this->ssdb, this->meta, this->expiration);
 	
 	cluster = new Cluster(this->ssdb);
 	if(cluster->init() == -1){
@@ -351,6 +352,7 @@ SSDBServer::~SSDBServer(){
 	delete backend_dump;
 	delete backend_sync;
 	delete expiration;
+	delete slots_manager;
 	delete cluster;
 
 	log_debug("SSDBServer finalized");

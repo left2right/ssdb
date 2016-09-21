@@ -3,7 +3,7 @@ include ../build_config.mk
 OBJS = proc_kv.o proc_hash.o proc_zset.o proc_queue.o \
 	backend_dump.o backend_sync.o slave.o \
 	serv.o proc_cluster.o cluster.o cluster_store.o cluster_migrate.o \
-	proc_slots.o
+	proc_slots.o slots.o
 LIBS = ./ssdb/libssdb.a ./util/libutil.a ./net/libnet.a
 EXES = ../ssdb-server
 
@@ -41,7 +41,9 @@ proc_queue.o: serv.h proc_queue.cpp
 	${CXX} ${CFLAGS} -c proc_queue.cpp
 
 proc_slots.o: serv.h proc_slots.cpp
-	${CXX} ${CFLAGS} -c proc_slots.cpp	
+	${CXX} ${CFLAGS} -c proc_slots.cpp
+slots.o: slots.h slots.cpp
+	${CXX} ${CFLAGS} -I./client  -c slots.cpp		
 
 serv.o: serv.h serv.cpp
 	${CXX} ${CFLAGS} -c serv.cpp
