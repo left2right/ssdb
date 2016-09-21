@@ -130,6 +130,10 @@ DEF_PROC(cluster_set_kv_range);
 DEF_PROC(cluster_set_kv_status);
 DEF_PROC(cluster_migrate_kv_data);
 
+//added for codis
+DEF_PROC(config);
+DEF_PROC(slaveof);
+
 
 #define REG_PROC(c, f)     net->proc_map.set_proc(#c, f, proc_##c)
 
@@ -257,6 +261,11 @@ void SSDBServer::reg_procs(NetworkServer *net){
 	REG_PROC(cluster_set_kv_range, "r");
 	REG_PROC(cluster_set_kv_status, "r");
 	REG_PROC(cluster_migrate_kv_data, "r");
+
+	//added for codis
+	REG_PROC(config, "rt");
+	REG_PROC(slaveof, "rt");
+
 }
 
 
