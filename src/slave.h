@@ -59,6 +59,7 @@ private:
 	}
 public:
 	std::string auth;
+	std::string decoder;
 	Slave(SSDB *ssdb, SSDB *meta, const char *ip, int port, bool is_mirror=false);
 	~Slave();
 	void start();

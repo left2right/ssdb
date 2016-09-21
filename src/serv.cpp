@@ -140,6 +140,7 @@ DEF_PROC(slotsmgrtone);
 DEF_PROC(slotsmgrttagslot);
 DEF_PROC(slotsmgrttagone);
 DEF_PROC(slotsmgrtstop);
+DEF_PROC(slavedecoder);
 
 #define REG_PROC(c, f)     net->proc_map.set_proc(#c, f, proc_##c)
 
@@ -277,7 +278,8 @@ void SSDBServer::reg_procs(NetworkServer *net){
     REG_PROC(slotsmgrtone, "wt");
     REG_PROC(slotsmgrttagslot, "wt");
     REG_PROC(slotsmgrttagone, "wt");
-    REG_PROC(slotsmgrtstop, "wt");    
+    REG_PROC(slotsmgrtstop, "wt");
+    REG_PROC(slavedecoder, "wt");   
 }
 
 
@@ -335,6 +337,10 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 					slave->set_id(id);
 				}
 				slave->auth = c->get_str("auth");
+				std::string slave_decoder = conf.get_str("server.slave_decoder");
+				strtolower(&slave_decoder);
+				log_debug("set slave decoder %s", slave_decoder.c_str());
+				slave->decoder = slave_decoder;
 				slave->start();
 				slaves.push_back(slave);
 			}

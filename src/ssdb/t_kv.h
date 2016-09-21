@@ -34,4 +34,16 @@ int decode_kv_key(const Bytes &slice, std::string *key, uint16_t *slot){
 	return 0;
 }
 
+static inline
+int decode_kv_key(const Bytes &slice, std::string *key){
+	Decoder decoder(slice.data(), slice.size());
+	if(decoder.skip(1) == -1){
+		return -1;
+	}
+	if(decoder.read_data(key) == -1){
+		return -1;
+	}
+	return 0;
+}
+
 #endif

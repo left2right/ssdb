@@ -34,6 +34,7 @@ enum STRATEGY{
 	STRATEGY_SLAVEOF, //added for codis
 	STRATEGY_SLOTBULK, //added for codis
 	STRATEGY_SLOTSTATUS, //added for codis
+	STRATEGY_SLAVEDECODER, //added for codis
 	STRATEGY_NULL
 };
 
@@ -127,6 +128,7 @@ static RedisCommand_raw cmds_raw[] = {
 	{STRATEGY_SLOTSTATUS,	"slotsmgrttagone",		"slotsmgrttagone",		REPLY_STATUS},
 	{STRATEGY_SLOTSTATUS,	"slotsmgrtone",		"slotsmgrtone",		REPLY_STATUS},
 	{STRATEGY_SLOTSTATUS,	"slotsmgrtstop",		"slotsmgrtstop",		REPLY_STATUS},
+	{STRATEGY_SLAVEDECODER,	"slavedecoder",		"slavedecoder",		REPLY_BULK},
 
 	{STRATEGY_AUTO, 	NULL,			NULL,			0}
 };
