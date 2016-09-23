@@ -55,8 +55,10 @@ int proc_slavedecoder(NetworkServer *net, Link *link, const Request &req, Respon
 	}
 
 	resp->push_back("ok");
-	decoder = serv->slaves.front()->decoder;
-	resp->push_back(decoder);
+	if (!(serv->slaves.empty())){
+		decoder = serv->slaves.front()->decoder;
+		resp->push_back(decoder);
+	}
 	
 	return 0;
 } 
