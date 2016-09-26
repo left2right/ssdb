@@ -1,8 +1,5 @@
 # SSDB - A fast NoSQL database for storing big list of data
 
-[![Author](https://img.shields.io/badge/author-@ideawu-blue.svg?style=flat)](http://www.ideawu.net/) [![Platform](https://img.shields.io/badge/platform-Linux,%20BSD,%20OS%20X,%20Windows-green.svg?style=flat)](https://github.com/ideawu/ssdb) [![NoSQL](https://img.shields.io/badge/db-NoSQL-pink.svg?tyle=flat)](https://github.com/ideawu/ssdb) [![License](https://img.shields.io/badge/license-New%20BSD-yellow.svg?style=flat)](LICENSE)
-
-
 SSDB is a high performace key-value(key-string, key-zset, key-hashmap) NoSQL database, __an alternative to Redis__.
 
 SSDB is stable, production-ready and is widely used by many Internet companies including QIHU 360.
@@ -48,18 +45,17 @@ echo $resp; // output: 123
 ## Compile and Install
 
 ```sh
-$ wget --no-check-certificate https://github.com/ideawu/ssdb/archive/master.zip
-$ unzip master
-$ cd ssdb-master
-$ make
-$ #optional, install ssdb in /usr/local/ssdb
-$ sudo make install
+$ git clone https://github.com/left2right/ssdb
+$ cd ssdb
+$ make 
+$ make install PREFIX=/your/direcotry
 
 # start master
+$  cd  /your/direcotry
 $ ./ssdb-server ssdb.conf
 
 # or start as daemon
-$ ./ssdb-server -d ssdb.conf
+$ ./ssdb-server -d ssdb.conf -s start
 
 # ssdb command line
 $ ./tools/ssdb-cli -p 8888
