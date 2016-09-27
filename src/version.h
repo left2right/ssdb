@@ -1,6 +1,6 @@
 #ifndef SSDB_DEPS_H
 #ifndef SSDB_VERSION
-#define SSDB_VERSION "2.0.0"
+#define SSDB_VERSION "2.0.1"
 #endif
 #endif
 #ifndef IOS
