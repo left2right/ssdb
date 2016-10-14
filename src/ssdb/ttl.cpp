@@ -98,7 +98,9 @@ int64_t ExpirationHandler::get_ttl(const Bytes &key){
 
 void ExpirationHandler::load_expiration_keys_from_db(int num){
 	ZIterator *it;
+	log_debug("expire key before zscan %d", time_ms());
 	it = ssdb->zscan(this->list_name, "", "", "", num);
+	log_debug("expire key after zscan %d", time_ms());
 	int n = 0;
 	while(it->next()){
 		n ++;
@@ -121,7 +123,9 @@ void ExpirationHandler::expire_loop(){
 	}
 
 	if(this->fast_keys.empty()){
+		log_debug("expire key before load expire keys %d", time_ms());
 		this->load_expiration_keys_from_db(BATCH_SIZE);
+		log_debug("expire key after load expire keys %d", time_ms());
 		if(this->fast_keys.empty()){
 			this->first_timeout = INT64_MAX;
 			return;
@@ -135,8 +139,11 @@ void ExpirationHandler::expire_loop(){
 		
 		if(score <= time_ms()){
 			log_debug("expired %s", key.c_str());
+			log_debug("expire key before del key %s %d", key.c_str(), time_ms());
 			ssdb->del(key);
+			log_debug("expire key after del key %s and before zdel from expire zset %d", key.c_str(), time_ms());
 			ssdb->zdel(this->list_name, key);
+			log_debug("expire key %s after zdel from expire zset %d", key.c_str(), time_ms());
 			this->fast_keys.pop_front();
 		}
 	}
