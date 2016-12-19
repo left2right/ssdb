@@ -130,6 +130,17 @@ DEF_PROC(cluster_set_kv_range);
 DEF_PROC(cluster_set_kv_status);
 DEF_PROC(cluster_migrate_kv_data);
 
+//added for codis
+DEF_PROC(config);
+DEF_PROC(slaveof);
+DEF_PROC(slotshashkey);
+DEF_PROC(slotsinfo);
+DEF_PROC(slotsmgrtslot);
+DEF_PROC(slotsmgrtone);
+DEF_PROC(slotsmgrttagslot);
+DEF_PROC(slotsmgrttagone);
+DEF_PROC(slotsmgrtstop);
+DEF_PROC(slavedecoder);
 
 #define REG_PROC(c, f)     net->proc_map.set_proc(#c, f, proc_##c)
 
@@ -257,6 +268,18 @@ void SSDBServer::reg_procs(NetworkServer *net){
 	REG_PROC(cluster_set_kv_range, "r");
 	REG_PROC(cluster_set_kv_status, "r");
 	REG_PROC(cluster_migrate_kv_data, "r");
+
+	//added for codis
+	REG_PROC(config, "rt");
+	REG_PROC(slaveof, "rt");
+	REG_PROC(slotshashkey, "rt");
+	REG_PROC(slotsinfo, "rt");
+    REG_PROC(slotsmgrtslot, "wt");
+    REG_PROC(slotsmgrtone, "wt");
+    REG_PROC(slotsmgrttagslot, "wt");
+    REG_PROC(slotsmgrttagone, "wt");
+    REG_PROC(slotsmgrtstop, "wt");
+    REG_PROC(slavedecoder, "wt");   
 }
 
 
@@ -272,6 +295,7 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 	backend_dump = new BackendDump(this->ssdb);
 	backend_sync = new BackendSync(this->ssdb, sync_speed);
 	expiration = new ExpirationHandler(this->ssdb);
+	slots_manager = new SlotsManager(this->ssdb, this->meta, this->expiration);
 	
 	cluster = new Cluster(this->ssdb);
 	if(cluster->init() == -1){
@@ -313,6 +337,10 @@ SSDBServer::SSDBServer(SSDB *ssdb, SSDB *meta, const Config &conf, NetworkServer
 					slave->set_id(id);
 				}
 				slave->auth = c->get_str("auth");
+				std::string slave_decoder = conf.get_str("server.slave_decoder");
+				strtolower(&slave_decoder);
+				log_debug("set slave decoder %s", slave_decoder.c_str());
+				slave->decoder = slave_decoder;
 				slave->start();
 				slaves.push_back(slave);
 			}
@@ -342,6 +370,7 @@ SSDBServer::~SSDBServer(){
 	delete backend_dump;
 	delete backend_sync;
 	delete expiration;
+	delete slots_manager;
 	delete cluster;
 
 	log_debug("SSDBServer finalized");

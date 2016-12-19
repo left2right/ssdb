@@ -17,6 +17,7 @@ found in the LICENSE file.
 #include "slave.h"
 #include "net/server.h"
 #include "cluster.h"
+#include "slots.h"
 
 class SSDBServer
 {
@@ -33,6 +34,7 @@ public:
 	BackendDump *backend_dump;
 	BackendSync *backend_sync;
 	ExpirationHandler *expiration;
+	SlotsManager *slots_manager;
 	std::vector<Slave *> slaves;
 	Cluster *cluster;
 

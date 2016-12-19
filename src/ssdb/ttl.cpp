@@ -9,8 +9,6 @@ found in the LICENSE file.
 #include "../util/log.h"
 #include "ttl.h"
 
-#define EXPIRATION_LIST_KEY "\xff\xff\xff\xff\xff|EXPIRE_LIST|KV"
-#define BATCH_SIZE    1000
 
 ExpirationHandler::ExpirationHandler(SSDB *ssdb){
 	this->ssdb = ssdb;

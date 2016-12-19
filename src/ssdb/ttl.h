@@ -11,6 +11,9 @@ found in the LICENSE file.
 #include "../util/sorted_set.h"
 #include <string>
 
+#define EXPIRATION_LIST_KEY "EXPIRE_LIST|KV|\xff\xff\xff\xff\xff"
+#define BATCH_SIZE    1000
+
 class ExpirationHandler
 {
 public:

@@ -30,6 +30,11 @@ enum STRATEGY{
 	STRATEGY_ZINCRBY,
 	STRATEGY_REMRANGEBYRANK,
 	STRATEGY_REMRANGEBYSCORE,
+	STRATEGY_CONFIG, //added for codis
+	STRATEGY_SLAVEOF, //added for codis
+	STRATEGY_SLOTBULK, //added for codis
+	STRATEGY_SLOTSTATUS, //added for codis
+	STRATEGY_SLAVEDECODER, //added for codis
 	STRATEGY_NULL
 };
 
@@ -112,6 +117,18 @@ static RedisCommand_raw cmds_raw[] = {
 	{STRATEGY_AUTO,		"lindex",		"qget", 			REPLY_BULK},
 	{STRATEGY_AUTO,		"lset",		    "qset", 			REPLY_STATUS},
 	{STRATEGY_AUTO,		"lrange",		"qslice",			REPLY_MULTI_BULK},
+
+	//added for codis
+	{STRATEGY_CONFIG,	"config",		"config",		REPLY_MULTI_BULK},
+	{STRATEGY_SLAVEOF,	"slaveof",		"slaveof",		REPLY_STATUS},
+	{STRATEGY_SLOTBULK,	"slotshashkey",		"slotshashkey",		REPLY_MULTI_BULK},
+	{STRATEGY_SLOTBULK,	"slotsinfo",		"slotsinfo",		REPLY_MULTI_BULK},
+	{STRATEGY_SLOTBULK,	"slotsmgrttagslot",		"slotsmgrttagslot",		REPLY_MULTI_BULK},
+	{STRATEGY_SLOTBULK,	"slotsmgrtslot",		"slotsmgrtslot",		REPLY_MULTI_BULK},
+	{STRATEGY_SLOTSTATUS,	"slotsmgrttagone",		"slotsmgrttagone",		REPLY_STATUS},
+	{STRATEGY_SLOTSTATUS,	"slotsmgrtone",		"slotsmgrtone",		REPLY_STATUS},
+	{STRATEGY_SLOTSTATUS,	"slotsmgrtstop",		"slotsmgrtstop",		REPLY_STATUS},
+	{STRATEGY_SLAVEDECODER,	"slavedecoder",		"slavedecoder",		REPLY_BULK},
 
 	{STRATEGY_AUTO, 	NULL,			NULL,			0}
 };
