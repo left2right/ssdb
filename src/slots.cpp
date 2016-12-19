@@ -306,6 +306,7 @@ int SlotsManager::slotsmgrtslot_kv(std::string addr, int port, int timeout, std:
 		return -1;
 	}
 	log_info("migrate kv key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
+	delete client;
 	return 1;
 }
 
@@ -328,6 +329,7 @@ int SlotsManager::slotsmgrtslot_hash(std::string addr, int port, int timeout, st
 		return -1;
 	}
 	log_info("migrate hash key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
+	delete client;
 	return 1;
 }
 
@@ -354,6 +356,7 @@ int SlotsManager::slotsmgrtslot_queue(std::string addr, int port, int timeout, s
 		}
 	}
 	log_info("migrate queue key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
+	delete client;
 	return 1;
 }
 
@@ -376,6 +379,7 @@ int SlotsManager::slotsmgrtslot_zset(std::string addr, int port, int timeout, st
 		}
 	}
 	log_info("migrate zset key: %s ,to %s:%d", name.c_str(), addr.c_str(), port);
+	delete client;
 	return 1;
 }
 
